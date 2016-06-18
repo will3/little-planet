@@ -5,7 +5,7 @@ module.exports = function(chunk, voxelFaces) {
 
   var result = greedyMesher(function(i, j, k) {
     return chunk.get(i, j, k);
-  }, chunk.shape);
+  }, chunk.shape, voxelFaces);
 
   result.vertices.forEach(function(v) {
     var vertice = new THREE.Vector3(v[0], v[1], v[2]);

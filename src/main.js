@@ -54,7 +54,7 @@ textures.forEach(function(texture) {
 var mesh = new THREE.Mesh();
 mesh.material = material;
 
-var num = 12;
+var num = 16;
 var ground = ndarray([], [num, num, num]);
 
 for (var i = 0; i < num; i++) {
@@ -65,7 +65,7 @@ for (var i = 0; i < num; i++) {
   }
 }
 
-var voxelFaces = [null, [1, 1, 1, 2, 1, 1]];
+var voxelFaces = [null, [2, 2, 1, 2, 2, 2]];
 var geometry = mesher(ground, voxelFaces);
 mesh.geometry = geometry;
 
@@ -76,7 +76,6 @@ scene.add(object);
 
 function render() {
   renderer.render(scene, camera);
-  object.rotation.y += 0.02;
 };
 
 function animate() {

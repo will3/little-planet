@@ -22,7 +22,9 @@ var GreedyMesh = (function() {
         dimsD = dims[d],
         dimsU = dims[u],
         dimsV = dims[v],
-        qdimsX, qdimsXY, xd
+        qdimsX, qdimsXY, xd;
+
+      var flip, index, value;
 
       if (mask.length < dimsU * dimsV) {
         mask = new Int32Array(dimsU * dimsV);
@@ -47,7 +49,21 @@ var GreedyMesh = (function() {
               mask[n] = 0;
               continue;
             }
-            mask[n] = a ? a : -b;
+            
+            flip = !a;
+
+            index = d * 2;
+            if (flip) {
+              index++;
+            }
+
+            value = voxelFaces[a || b][index];
+
+            if (flip) {
+              value *= -1;
+            }
+
+            mask[n] = value;
           }
         }
 
