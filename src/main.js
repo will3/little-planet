@@ -1,9 +1,48 @@
 var THREE = require('three');
 var keycode = require('keycode');
 
+var postprocessing = { enabled: true, renderMode: 0 };
+
 var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
+
+var depthMaterial;
+var depthRenderTarget;
+var ssaoPass;
+var effectComposer;
+
+function initPostprocessing() {
+
+  // Setup render pass
+  var renderPass = new THREE.RenderPass(scene, camera);
+
+  // Setup depth pass
+  depthMaterial = new THREE.MeshDepthMaterial();
+  depthMaterial.depthPacking = THREE.RGBADepthPacking;
+  depthMaterial.blending = THREE.NoBlending;
+
+  var pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+  depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
+
+  // Setup SSAO pass
+  ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
+  ssaoPass.renderToScreen = true;
+  //ssaoPass.uniforms[ "tDiffuse" ].value will be set by ShaderPass
+  ssaoPass.uniforms["tDepth"].value = depthRenderTarget.texture;
+  ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+  ssaoPass.uniforms['cameraNear'].value = camera.near;
+  ssaoPass.uniforms['cameraFar'].value = camera.far;
+  ssaoPass.uniforms['onlyAO'].value = (postprocessing.renderMode == 1);
+  ssaoPass.uniforms['aoClamp'].value = 0.3;
+  ssaoPass.uniforms['lumInfluence'].value = 0.5;
+
+  // Add pass to effect composer
+  effectComposer = new THREE.EffectComposer(renderer);
+  effectComposer.addPass(renderPass);
+  effectComposer.addPass(ssaoPass);
+
+};
 
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -14,9 +53,21 @@ var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHei
   0.1, 1000);
 
 window.addEventListener('resize', function() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
+
+  // Resize renderTargets
+  ssaoPass.uniforms['size'].value.set(width, height);
+
+  var pixelRatio = renderer.getPixelRatio();
+  var newWidth = Math.floor(width / pixelRatio) || 1;
+  var newHeight = Math.floor(height / pixelRatio) || 1;
+  depthRenderTarget.setSize(newWidth, newHeight);
+  effectComposer.setSize(newWidth, newHeight);
 });
 
 var ndarray = require('ndarray');
@@ -24,7 +75,8 @@ var mesher = require('./voxel/mesher');
 var meshChunks = require('./voxel/meshchunks');
 
 var size = 32;
-var dis = size * 1.2;
+var disScale = 12;
+var dis = size * disScale;
 camera.position.x = dis;
 camera.position.y = dis;
 camera.position.z = dis;
@@ -67,7 +119,7 @@ loadTexture('grass', 1);
 loadTexture('soil', 2);
 loadTexture('soil2', 3);
 loadTexture('stone', 4);
-loadTexture('sea', 5, 0.95);
+loadTexture('sea', 5, 0.8);
 loadTexture('sand', 6);
 loadTexture('cloud', 10, 0.9, null, function(m) {
   m.emissive = new THREE.Color(0x888888);
@@ -75,6 +127,7 @@ loadTexture('cloud', 10, 0.9, null, function(m) {
 });
 
 var object = new THREE.Object3D();
+object.scale.set(10, 10, 10);
 
 // var cloudMesh = new THREE.Mesh();
 // var cloud = require('./cloud')([8, 1, 14]);
@@ -105,7 +158,18 @@ object.add(ambientLight);
 object.add(directionalLight);
 
 function render() {
-  renderer.render(scene, camera);
+  if (postprocessing.enabled) {
+    // Render depth into depthRenderTarget
+    scene.overrideMaterial = depthMaterial;
+    renderer.render(scene, camera, depthRenderTarget, true);
+
+    // Render renderPass and SSAO shaderPass
+    scene.overrideMaterial = null;
+    effectComposer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
+
   if (keyholds['right']) {
     object.rotation.y -= 0.05;
   } else if (keyholds['left']) {
@@ -191,4 +255,5 @@ window.addEventListener('mouseup', onMouseUp, false);
 window.addEventListener('keydown', onKeyDown, false);
 window.addEventListener('keyup', onKeyUp, false);
 
+initPostprocessing();
 animate();

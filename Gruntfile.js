@@ -6,15 +6,33 @@ module.exports = function(grunt) {
         dest: 'js',
         flatten: true,
         expand: true
+      },
+
+      js_shaders: {
+        src: [
+          'node_modules/three/examples/js/shaders/*'
+        ],
+        dest: 'js/shaders',
+        flatten: true,
+        expand: true
+      },
+
+      js_postprocessing: {
+        src: [
+          'node_modules/three/examples/js/postprocessing/*'
+        ],
+        dest: 'js/postprocessing',
+        flatten: true,
+        expand: true
       }
     },
     shell: {
-    	open: {
-    		command: 'open http://localhost:3000/index.html'
-    	}, 
-    	build: {
-    		command: 'npm run build'
-    	}
+      open: {
+        command: 'open http://localhost:3000/index.html'
+      },
+      build: {
+        command: 'npm run build'
+      }
     },
     connect: {
       server: {
