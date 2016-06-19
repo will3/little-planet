@@ -2,7 +2,7 @@
 
 Procedural planet
 
-Preview:
+Preview:  
 ![Preview](https://raw.githubusercontent.com/will3/little-planet/master/preview.png)
 
 todo:
