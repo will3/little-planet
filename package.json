@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "keycode": "^2.1.2",
     "ndarray": "^1.0.18",
+    "simplex-noise": "^2.2.0",
     "three": "^0.78.0"
   },
   "browserify": {

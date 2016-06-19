@@ -2,7 +2,7 @@ var GreedyMesh = (function() {
   //Cache buffer internally
   var mask = new Int32Array(4096);
 
-  return function(f, dims, voxelFaces) {
+  return function(f, dims) {
     var vertices = [],
       faces = [],
       uvs = [],
@@ -49,7 +49,7 @@ var GreedyMesh = (function() {
               mask[n] = 0;
               continue;
             }
-            
+
             flip = !a;
 
             index = d * 2;
@@ -57,7 +57,7 @@ var GreedyMesh = (function() {
               index++;
             }
 
-            value = voxelFaces[a || b][index];
+            value = (a || b)[index];
 
             if (flip) {
               value *= -1;
