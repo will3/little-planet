@@ -1,8 +1,9 @@
 var ndarray = require('ndarray');
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
-var Chunks = require('./chunks');
-var meshChunks = require('./voxel/meshchunks');
+
+var Chunks = require('../chunks');
+var meshChunks = require('../voxel/meshchunks');
 
 var GRASS = 1;
 var SOIL = 2;

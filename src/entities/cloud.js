@@ -1,11 +1,14 @@
 var ndarray = require('ndarray');
 var SimplexNoise = require('simplex-noise');
-var mesher = require('./voxel/mesher');
-var Dir = require('./dir');
-var CLOUD = 10;
-var Chunks = require('./chunks');
-var meshChunks = require('./voxel/meshchunks');
 var SimplexNoise = require('simplex-noise');
+
+var mesher = require('../voxel/mesher');
+var Dir = require('../dir');
+var Chunks = require('../chunks');
+var meshChunks = require('../voxel/meshchunks');
+
+
+var CLOUD = 10;
 
 module.exports = function(parent, material) {
 

@@ -29,6 +29,18 @@ var app = {};
 
 var entities = [];
 
+var material = new THREE.MultiMaterial();
+var textureLoader = new THREE.TextureLoader();
+var blockTextures = [];
+material.materials = [null];
+var textures = {};
+
+var keyholds = {};
+
+var dt = 1 / 60;
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+
 function initPostprocessing() {
 
   // Setup render pass
@@ -61,7 +73,7 @@ function initPostprocessing() {
 
 };
 
-window.addEventListener('resize', function() {
+function onWindowResize() {
   var width = window.innerWidth;
   var height = window.innerHeight;
 
@@ -77,7 +89,7 @@ window.addEventListener('resize', function() {
   var newHeight = Math.floor(height / pixelRatio) || 1;
   depthRenderTarget.setSize(newWidth, newHeight);
   effectComposer.setSize(newWidth, newHeight);
-});
+};
 
 function initScene() {
   var dis = size * disScale;
@@ -98,24 +110,21 @@ function initScene() {
   object.add(directionalLight);
 };
 
-var material = new THREE.MultiMaterial();
-var textureLoader = new THREE.TextureLoader();
-var blockTextures = [];
-material.materials = [null];
-
 function loadResources() {
-  loadTexture('grass', 1);
-  loadTexture('soil', 2);
-  loadTexture('soil2', 3);
-  loadTexture('stone', 4);
-  loadTexture('sea', 5, 0.8);
-  loadTexture('sand', 6);
-  loadTexture('cloud', 10, 0.7, null, function(m) {
+  textures['building'] = textureLoader.load('textures/building.png');
+
+  loadBlockMaterial('grass', 1);
+  loadBlockMaterial('soil', 2);
+  loadBlockMaterial('soil2', 3);
+  loadBlockMaterial('stone', 4);
+  loadBlockMaterial('sea', 5, 0.8);
+  loadBlockMaterial('sand', 6);
+  loadBlockMaterial('cloud', 10, 0.7, null, function(m) {
     m.emissive = new THREE.Color(0x888888);
   });
 };
 
-function loadTexture(name, index, alpha, materialType, transform) {
+function loadBlockMaterial(name, index, alpha, materialType, transform) {
   var texture = textureLoader.load('textures/' + name + '.png');
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
@@ -169,8 +178,6 @@ function render() {
   }
 };
 
-var dt = 1 / 60;
-
 function animate() {
   entities.forEach(function(entity) {
     entity.tick(dt);
@@ -178,9 +185,6 @@ function animate() {
   render();
   requestAnimationFrame(animate);
 };
-
-var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
 
 function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -222,8 +226,6 @@ function onMouseUp(event) {
 
 };
 
-var keyholds = {};
-
 function onKeyDown(e) {
   var key = keycode(e);
   keyholds[key] = true;
@@ -239,18 +241,19 @@ window.addEventListener('mousedown', onMouseDown, false);
 window.addEventListener('mouseup', onMouseUp, false);
 window.addEventListener('keydown', onKeyDown, false);
 window.addEventListener('keyup', onKeyUp, false);
+window.addEventListener('resize', onWindowResize);
 
 loadResources();
 initPostprocessing();
 initScene();
 
-var texture = textureLoader.load('textures/building.png');
-var building = require('./building')(texture, noAoLayer, camera);
+// Init app
+var building = require('./entities/building')(textures['building'], noAoLayer, camera);
 entities.push(building);
 
-var cloud = require('./cloud')(noAoLayer, material);
+var cloud = require('./entities/cloud')(noAoLayer, material);
 entities.push(cloud);
 
-var terrian = require('./terrian')(size, object, material);
+var terrian = require('./entities/terrian')(size, object, material);
 
 animate();
