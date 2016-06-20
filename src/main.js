@@ -1,5 +1,6 @@
 var THREE = require('three');
 var keycode = require('keycode');
+var ndarray = require('ndarray');
 
 var postprocessing = { enabled: true, renderMode: 0 };
 
@@ -7,10 +8,26 @@ var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
 
+document.body.appendChild(renderer.domElement);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0xBBD9F7);
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
+  0.1, 1000);
+
 var depthMaterial;
 var depthRenderTarget;
 var ssaoPass;
 var effectComposer;
+var noAoLayer;
+var size = 32;
+var disScale = 12;
+var object;
+
+var app = {};
+
+var entities = [];
 
 function initPostprocessing() {
 
@@ -44,14 +61,6 @@ function initPostprocessing() {
 
 };
 
-document.body.appendChild(renderer.domElement);
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0xBBD9F7);
-
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
-  0.1, 1000);
-
 window.addEventListener('resize', function() {
   var width = window.innerWidth;
   var height = window.innerHeight;
@@ -70,24 +79,41 @@ window.addEventListener('resize', function() {
   effectComposer.setSize(newWidth, newHeight);
 });
 
-var ndarray = require('ndarray');
-var mesher = require('./voxel/mesher');
-var meshChunks = require('./voxel/meshchunks');
+function initScene() {
+  var dis = size * disScale;
+  camera.position.x = dis;
+  camera.position.y = dis;
+  camera.position.z = dis;
+  camera.lookAt(new THREE.Vector3());
 
-var size = 32;
-var disScale = 12;
-var dis = size * disScale;
-camera.position.x = dis;
-camera.position.y = dis;
-camera.position.z = dis;
-camera.lookAt(new THREE.Vector3());
+  object = new THREE.Object3D();
+  object.scale.set(10, 10, 10);
+  scene.add(object);
+  noAoLayer = new THREE.Object3D();
+  object.add(noAoLayer);
+  var ambientLight = new THREE.AmbientLight(0x888888);
+  var directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  directionalLight.position.set(0.3, 1.0, 0.5);
+  object.add(ambientLight);
+  object.add(directionalLight);
+};
 
 var material = new THREE.MultiMaterial();
 var textureLoader = new THREE.TextureLoader();
-
-var textures = [];
-
+var blockTextures = [];
 material.materials = [null];
+
+function loadResources() {
+  loadTexture('grass', 1);
+  loadTexture('soil', 2);
+  loadTexture('soil2', 3);
+  loadTexture('stone', 4);
+  loadTexture('sea', 5, 0.8);
+  loadTexture('sand', 6);
+  loadTexture('cloud', 10, 0.7, null, function(m) {
+    m.emissive = new THREE.Color(0x888888);
+  });
+};
 
 function loadTexture(name, index, alpha, materialType, transform) {
   var texture = textureLoader.load('textures/' + name + '.png');
@@ -95,7 +121,7 @@ function loadTexture(name, index, alpha, materialType, transform) {
   texture.minFilter = THREE.NearestFilter;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  textures.push(texture);
+  blockTextures.push(texture);
 
   materialType = materialType || THREE.MeshLambertMaterial;
 
@@ -115,54 +141,14 @@ function loadTexture(name, index, alpha, materialType, transform) {
   material.materials[index] = m;
 }
 
-loadTexture('grass', 1);
-loadTexture('soil', 2);
-loadTexture('soil2', 3);
-loadTexture('stone', 4);
-loadTexture('sea', 5, 0.8);
-loadTexture('sand', 6);
-loadTexture('cloud', 10, 0.9, null, function(m) {
-  m.emissive = new THREE.Color(0x888888);
-  m.reflectivity = 0.8;
-});
-
-var object = new THREE.Object3D();
-object.scale.set(10, 10, 10);
-
-// var cloudMesh = new THREE.Mesh();
-// var cloud = require('./cloud')([8, 1, 14]);
-// var cloudGeometry = mesher(cloud.chunk);
-// cloudMesh.geometry = cloudGeometry;
-// cloudMesh.material = material;
-// object.add(cloudMesh);
-// cloudMesh.position.set(0, 21, 0);
-
-var terrian = require('./terrian')(size);
-
-var pivot = new THREE.Object3D();
-
-meshChunks(terrian.chunk, pivot, material);
-meshChunks(terrian.water, pivot, material);
-
-var center = new THREE.Vector3()
-  .subVectors(terrian.bounds.min, terrian.bounds.size)
-  .multiplyScalar(0.5);
-pivot.position.copy(center);
-object.add(pivot);
-scene.add(object);
-
-var ambientLight = new THREE.AmbientLight(0x666666);
-var directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-directionalLight.position.set(0.3, 1.0, 0.5);
-object.add(ambientLight);
-object.add(directionalLight);
-
 function render() {
   if (postprocessing.enabled) {
+    noAoLayer.visible = false;
     // Render depth into depthRenderTarget
     scene.overrideMaterial = depthMaterial;
     renderer.render(scene, camera, depthRenderTarget, true);
 
+    noAoLayer.visible = true;
     // Render renderPass and SSAO shaderPass
     scene.overrideMaterial = null;
     effectComposer.render();
@@ -183,7 +169,12 @@ function render() {
   }
 };
 
+var dt = 1 / 60;
+
 function animate() {
+  entities.forEach(function(entity) {
+    entity.tick(dt);
+  });
   render();
   requestAnimationFrame(animate);
 };
@@ -197,44 +188,38 @@ function onMouseMove(event) {
 
   // update the picking ray with the camera and mouse position  
   raycaster.setFromCamera(mouse, camera);
-
-  if (isDrag) {
-    // calculate objects intersecting the picking ray
-    // var intersects = raycaster.intersectObjects(object.children);
-
-    // if (intersects.length === 0) {
-    //   return;
-    // }
-
-    // var point = intersects[0].point;
-    // point.add(raycaster.ray.direction.clone().normalize().multiplyScalar(0.01));
-    // point = mesh.worldToLocal(point);
-
-    // var coord = [
-    //   Math.floor(point.x),
-    //   Math.floor(point.y),
-    //   Math.floor(point.z)
-    // ];
-    // terrian.chunk.set(coord[0], coord[1], coord[2], null);
-
-    // mesh.parent.remove(mesh);
-    // geometry.dispose();
-    // geometry = mesher(terrian.chunk);
-
-    // mesh = new THREE.Mesh(geometry, material);
-    // object.add(mesh);
-    // mesh.position.copy(center);
-  }
 };
 
-var isDrag = false;
-
 function onMouseDown(event) {
-  isDrag = true;
+  // calculate objects intersecting the picking ray
+  // var intersects = raycaster.intersectObjects(object.children);
+
+  // if (intersects.length === 0) {
+  //   return;
+  // }
+
+  // var point = intersects[0].point;
+  // point.add(raycaster.ray.direction.clone().normalize().multiplyScalar(0.01));
+  // point = mesh.worldToLocal(point);
+
+  // var coord = [
+  //   Math.floor(point.x),
+  //   Math.floor(point.y),
+  //   Math.floor(point.z)
+  // ];
+  // terrian.chunk.set(coord[0], coord[1], coord[2], null);
+
+  // mesh.parent.remove(mesh);
+  // geometry.dispose();
+  // geometry = mesher(terrian.chunk);
+
+  // mesh = new THREE.Mesh(geometry, material);
+  // object.add(mesh);
+  // mesh.position.copy(center);
 };
 
 function onMouseUp(event) {
-  isDrag = false;
+
 };
 
 var keyholds = {};
@@ -255,5 +240,17 @@ window.addEventListener('mouseup', onMouseUp, false);
 window.addEventListener('keydown', onKeyDown, false);
 window.addEventListener('keyup', onKeyUp, false);
 
+loadResources();
 initPostprocessing();
+initScene();
+
+var texture = textureLoader.load('textures/building.png');
+var building = require('./building')(texture, noAoLayer, camera);
+entities.push(building);
+
+var cloud = require('./cloud')(noAoLayer, material);
+entities.push(cloud);
+
+var terrian = require('./terrian')(size, object, material);
+
 animate();

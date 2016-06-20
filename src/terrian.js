@@ -2,6 +2,7 @@ var ndarray = require('ndarray');
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 var Chunks = require('./chunks');
+var meshChunks = require('./voxel/meshchunks');
 
 var GRASS = 1;
 var SOIL = 2;
@@ -14,7 +15,7 @@ var LEVEL_SURFACE = 1;
 var LEVEL_MIDDLE = 2;
 var LEVEL_CORE = 3;
 
-module.exports = function(size) {
+module.exports = function(size, parent, material) {
   var noise_surface = new SimplexNoise(Math.random);
   var noise_surface2 = new SimplexNoise(Math.random);
   var noise_biomes = new SimplexNoise(Math.random);
@@ -27,6 +28,10 @@ module.exports = function(size) {
   var num = size;
   var ground = new Chunks();
   var water = new Chunks();
+  var bounds = {
+    min: new THREE.Vector3(0, 0, 0),
+    size: new THREE.Vector3(num, num, num)
+  };
 
   var center = [-num / 2 + 0.5, -num / 2 + 0.5, -num / 2 + 0.5];
   var centerCoord = [
@@ -48,6 +53,17 @@ module.exports = function(size) {
   generateSea();
   generateBiomes();
   generateTiles();
+
+  var pivot = new THREE.Object3D();
+
+  meshChunks(ground, pivot, material);
+  meshChunks(water, pivot, material);
+
+  var center = new THREE.Vector3()
+    .subVectors(bounds.min, bounds.size)
+    .multiplyScalar(0.5);
+  pivot.position.copy(center);
+  parent.add(pivot);
 
   function init() {
     for (var i = 0; i < num; i++) {
@@ -359,7 +375,7 @@ module.exports = function(size) {
       if (level === LEVEL_SURFACE) {
         if (biome.isSeaLevel) {
           var height = heightMap.get(coord[0], coord[1], coord[2]);
-          if (biome.value2  * height < -0.1) {
+          if (biome.value2 * height < -0.1) {
             var above = ground.get(coord[0], coord[1], coord[2]);
             var isSurface = !above;
             if (isSurface) {
@@ -400,9 +416,6 @@ module.exports = function(size) {
   return {
     chunk: ground,
     water: water,
-    bounds: {
-      min: new THREE.Vector3(0, 0, 0),
-      size: new THREE.Vector3(num, num, num)
-    }
+    bounds: bounds
   };
 };

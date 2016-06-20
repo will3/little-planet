@@ -1,11 +1,12 @@
 var greedyMesher = require('./greedy').mesher;
 
-module.exports = function(chunk) {
+module.exports = function(chunk, f) {
   var geometry = new THREE.Geometry();
 
-  var result = greedyMesher(function(i, j, k) {
+  f = f || function(i, j, k) {
     return chunk.get(i, j, k);
-  }, chunk.shape);
+  };
+  var result = greedyMesher(f, chunk.shape);
 
   result.vertices.forEach(function(v) {
     var vertice = new THREE.Vector3(v[0], v[1], v[2]);
@@ -36,6 +37,6 @@ module.exports = function(chunk) {
   });
 
   geometry.computeFaceNormals();
-  
+
   return geometry;
 };
