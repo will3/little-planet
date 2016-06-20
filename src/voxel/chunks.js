@@ -1,4 +1,4 @@
-var ndarray = require('ndarray');
+var Chunk = require('./chunk');
 
 var Chunks = function() {
   this.map = {};
@@ -10,13 +10,17 @@ Chunks.prototype.set = function(i, j, k, v) {
   var hash = origin.toArray().join(',');
   if (this.map[hash] == null) {
     this.map[hash] = {
-      chunk: ndarray([], [this.chunkSize, this.chunkSize, this.chunkSize]),
+      chunk: new Chunk(),
       origin: origin
     }
   }
 
   this.map[hash].dirty = true;
   this.map[hash].chunk.set(i - origin.x, j - origin.y, k - origin.z, v);
+};
+
+Chunks.prototype.setAt = function(coord, v) {
+  this.set(coord.x, coord.y, coord.z, v);
 };
 
 Chunks.prototype.setDirty = function(i, j, k) {
@@ -36,6 +40,10 @@ Chunks.prototype.get = function(i, j, k, v) {
   }
   var origin = this.map[hash].origin;
   return this.map[hash].chunk.get(i - origin.x, j - origin.y, k - origin.z);
+};
+
+Chunks.prototype.getAt = function(coord) {
+  return this.get(coord.x, coord.y, coord.z);
 };
 
 Chunks.prototype.getOrigin = function(i, j, k) {

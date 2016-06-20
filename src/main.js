@@ -1,6 +1,5 @@
 var THREE = require('three');
 var keycode = require('keycode');
-var ndarray = require('ndarray');
 
 var app = {};
 
@@ -17,6 +16,7 @@ renderer.setClearColor(0xBBD9F7);
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
   0.1, 1000);
+var cameraUp, cameraDir, cameraRight;
 
 // Post processing
 var depthMaterial;
@@ -45,6 +45,7 @@ var textures = {};
 var keyholds = {};
 var mouse = new THREE.Vector2();
 var raycaster = new THREE.Raycaster();
+var raycasterDir;
 
 // frame time
 var dt = 1 / 60;
@@ -106,6 +107,10 @@ function initScene() {
   camera.position.z = dis;
   camera.lookAt(new THREE.Vector3());
 
+  cameraUp = new THREE.Vector3(0, 1, 0);
+  cameraDir = new THREE.Vector3(0, 0, 1).applyEuler(camera.rotation);
+  cameraRight = new THREE.Vector3().crossVectors(cameraUp, cameraDir);
+
   object = new THREE.Object3D();
   object.scale.set(10, 10, 10);
   scene.add(object);
@@ -156,7 +161,7 @@ function loadBlockMaterial(name, index, alpha, materialType, transform) {
   }
 
   material.materials[index] = m;
-}
+};
 
 function render() {
   if (postprocessing.enabled) {
@@ -173,17 +178,28 @@ function render() {
     renderer.render(scene, camera);
   }
 
+  var rotateY = 0;
   if (keyholds['right']) {
-    object.rotation.y -= 0.05;
+    rotateY -= 0.1;
   } else if (keyholds['left']) {
-    object.rotation.y += 0.05;
+    rotateY += 0.1;
   }
 
+  var quatInverse = object.quaternion.clone().inverse();
+  var axis = cameraUp.clone().applyQuaternion(quatInverse).normalize();
+  object.quaternion
+    .multiply(new THREE.Quaternion().setFromAxisAngle(axis, rotateY));
+
+  var rotateX = 0;
   if (keyholds['up']) {
-    object.rotation.x -= 0.05;
+    rotateX -= 0.1;
   } else if (keyholds['down']) {
-    object.rotation.x += 0.05;
+    rotateX += 0.1;
   }
+
+  axis = cameraRight.clone().applyQuaternion(quatInverse).normalize();
+  object.quaternion
+    .multiply(new THREE.Quaternion().setFromAxisAngle(axis, rotateX));
 };
 
 function animate() {
@@ -200,11 +216,28 @@ function onMouseMove(event) {
 
   // update the picking ray with the camera and mouse position  
   raycaster.setFromCamera(mouse, camera);
+  raycasterDir = raycaster.ray.direction.clone();
 };
 
 function onMouseDown(event) {
   // calculate objects intersecting the picking ray
-  // var intersects = raycaster.intersectObjects(object.children);
+  var intersects = raycaster.intersectObject(terrian.object, true);
+  if (intersects.length === 0) {
+    return;
+  }
+
+  var point = intersects[0].point.clone()
+    .add(raycasterDir.clone().multiplyScalar(0.01));
+
+  var localPoint = terrian.object.worldToLocal(point);
+  var coord = new THREE.Vector3(
+    Math.floor(localPoint.x),
+    Math.floor(localPoint.y),
+    Math.floor(localPoint.z)
+  );
+
+  console.log(terrian.ground.getAt(coord));
+
 
   // if (intersects.length === 0) {
   //   return;

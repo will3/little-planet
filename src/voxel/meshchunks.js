@@ -1,8 +1,9 @@
 var mesher = require('./mesher');
 
-module.exports = function(chunks, parent, material, f) {
+module.exports = function(chunks, parent, material) {
   for (var id in chunks.map) {
     var chunk = chunks.map[id];
+    var data = chunk.chunk;
     if (chunk.dirty) {
 
       if (chunk.mesh != null) {
@@ -12,11 +13,9 @@ module.exports = function(chunks, parent, material, f) {
 
       var origin = chunk.origin;
 
-      var chunkF = f == null ? null : function(i, j, k) {
-        return f(i + origin.x, j + origin.y, k + origin.z);
-      };
-
-      var geometry = mesher(chunk.chunk, chunkF);
+      var geometry = mesher(chunk.chunk, function(i, j, k) {
+          return data.get(i, j, k);
+      });
       var mesh = new THREE.Mesh(geometry, material);
       mesh.position.copy(chunk.origin);
       parent.add(mesh);

@@ -1,10 +1,9 @@
-var ndarray = require('ndarray');
 var SimplexNoise = require('simplex-noise');
 var SimplexNoise = require('simplex-noise');
 
 var mesher = require('../voxel/mesher');
 var Dir = require('../dir');
-var Chunks = require('../chunks');
+var Chunks = require('../voxel/chunks');
 var meshChunks = require('../voxel/meshchunks');
 
 var CLOUD = 10;

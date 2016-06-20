@@ -1,8 +1,7 @@
-var ndarray = require('ndarray');
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 
-var Chunks = require('../chunks');
+var Chunks = require('../voxel/chunks');
 var meshChunks = require('../voxel/meshchunks');
 
 var GRASS = 1;
@@ -433,7 +432,7 @@ module.exports = function(size, parent, material) {
   };
 
   return {
-    chunk: ground,
+    ground: ground,
     water: water,
     bounds: bounds,
     object: pivot
