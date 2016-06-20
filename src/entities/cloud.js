@@ -7,7 +7,6 @@ var Dir = require('../dir');
 var Chunks = require('../chunks');
 var meshChunks = require('../voxel/meshchunks');
 
-
 var CLOUD = 10;
 
 module.exports = function(parent, material) {
@@ -217,10 +216,6 @@ module.exports = function(parent, material) {
 
         nextData.delta += 1.0;
         data.delta += -1.0;
-        // nextData.amount += 1;
-        // chunks.set(nextCoord[0], nextCoord[1], nextCoord[2], cloudVoxel);
-        // data.amount -= 1;
-        // chunks.set(coord[0], coord[1], coord[2], 0);
       }
 
       for (var id in changed) {
@@ -237,33 +232,6 @@ module.exports = function(parent, material) {
       }
 
       updateMesh();
-      // for (var id in allCoords) {
-      //   var coord = allCoords[id];
-      //   var data = dataMap.get(coord[0], coord[1], coord[2]);
-      //   if (data.amount > 0) {
-      //     var wind = data.wind;
-      //     var nextCoord = [
-      //       coord[0] + wind[0],
-      //       coord[1] + wind[1],
-      //       coord[2] + wind[2],
-      //     ];
-
-      //     var nextData = dataMap.get(nextCoord[0], nextCoord[1], nextCoord[2]);
-
-      //     if (nextData != null) {
-      //       dataMap.setDirty(nextCoord[0], nextCoord[1], nextCoord[2]);
-      //       nextData.amount += 1;
-      //       chunks.set(nextCoord[0], nextCoord[1], nextCoord[2], cloudVoxel);
-      //     }
-
-      //     data.amount -= 1;
-      //     if (data.amount < 1) {
-      //       chunks.set(coord[0], coord[1], coord[2], 0);
-      //     }
-      //   }
-      // }
-
-      // updateMesh();
     }
   };
 

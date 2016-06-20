@@ -40,9 +40,12 @@ module.exports = function(size, parent, material) {
     Math.floor(num / 2),
     Math.floor(num / 2)
   ];
-  var gravityMap = new Chunks();
-  var biomeMap = new Chunks();
-  var heightMap = new Chunks();
+
+  // hash -> data
+  // gravity: gravity (s)
+  // biome: biome data
+  // height: height of surface
+  var dataMap = {};
 
   var surfaceNum = 6;
   var seaLevel = 2;
@@ -88,7 +91,9 @@ module.exports = function(size, parent, material) {
             coord[u] = i;
             coord[v] = j;
 
-            var gravity = gravityMap.get(coord[0], coord[1], coord[2]);
+            var data = getData(coord[0], coord[1], coord[2]);
+            var gravity = data.gravity;
+
             var block = [
               0, 0, 0, 0, 0, 0
             ];
@@ -233,7 +238,8 @@ module.exports = function(size, parent, material) {
 
           biome.level = level;
 
-          biomeMap.set(i, j, k, biome);
+          var data = getData(i, j, k);
+          data.biome = biome;
         }
       }
     }
@@ -248,7 +254,8 @@ module.exports = function(size, parent, material) {
           gravity.forEach(function(g) {
             map[g] = true;
           });
-          gravityMap.set(i, j, k, map);
+          var data = getData(i, j, k);
+          data.gravity = map;
         }
       }
     }
@@ -325,7 +332,8 @@ module.exports = function(size, parent, material) {
               (-Math.pow(disBias, 1.0) * 1.0 + 0.6);
 
             if (value < 0.0) {
-              heightMap.set(coord[0], coord[1], coord[2], value);
+              var data = getData(coord[0], coord[1], coord[2]);
+              data.height = value;
               ground.set(coord[0], coord[1], coord[2], 0);
             }
           }
@@ -368,14 +376,16 @@ module.exports = function(size, parent, material) {
       coord[u] = pos[u];
       coord[v] = pos[v];
 
-      var biome = biomeMap.get(pos[0], pos[1], pos[2]);
+      var data = getData(pos[0], pos[1], pos[2]);
+      var biome = data.biome;
 
       var level = biome.level;
       var value = biome.value;
 
       if (level === LEVEL_SURFACE) {
         if (biome.isSeaLevel) {
-          var height = heightMap.get(coord[0], coord[1], coord[2]);
+          var data = getData(coord[0], coord[1], coord[2]);
+          var height = data.height;
           if (biome.value2 * height < -0.1) {
             var above = ground.get(coord[0], coord[1], coord[2]);
             var isSurface = !above;
@@ -414,9 +424,18 @@ module.exports = function(size, parent, material) {
     };
   };
 
+  function getData(i, j, k) {
+    var hash = [i, j, k].join(',');
+    if (dataMap[hash] == null) {
+      dataMap[hash] = {};
+    }
+    return dataMap[hash];
+  };
+
   return {
     chunk: ground,
     water: water,
-    bounds: bounds
+    bounds: bounds,
+    object: pivot
   };
 };
