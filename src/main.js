@@ -2,44 +2,52 @@ var THREE = require('three');
 var keycode = require('keycode');
 var ndarray = require('ndarray');
 
+var app = {};
+
+// Post processing setting
 var postprocessing = { enabled: true, renderMode: 0 };
 
+// Renderer, scene, camera
 var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
-
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xBBD9F7);
-
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
   0.1, 1000);
 
+// Post processing
 var depthMaterial;
 var depthRenderTarget;
 var ssaoPass;
 var effectComposer;
-var noAoLayer;
+
+// Size
 var size = 32;
 var disScale = 12;
-var object;
 
-var app = {};
+// Objects
+var object;
+var noAoLayer;
 
 var entities = [];
 
+// Materials, Textures
 var material = new THREE.MultiMaterial();
+material.materials = [null];
 var textureLoader = new THREE.TextureLoader();
 var blockTextures = [];
-material.materials = [null];
 var textures = {};
 
+// Input states
 var keyholds = {};
-
-var dt = 1 / 60;
-var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
+var raycaster = new THREE.Raycaster();
+
+// frame time
+var dt = 1 / 60;
 
 function initPostprocessing() {
 
