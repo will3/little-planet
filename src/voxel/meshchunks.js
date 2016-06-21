@@ -13,9 +13,7 @@ module.exports = function(chunks, parent, material) {
 
       var origin = chunk.origin;
 
-      var geometry = mesher(chunk.chunk, function(i, j, k) {
-          return data.get(i, j, k);
-      });
+      var geometry = mesher(chunk.chunk);
       var mesh = new THREE.Mesh(geometry, material);
       mesh.position.copy(chunk.origin);
       parent.add(mesh);

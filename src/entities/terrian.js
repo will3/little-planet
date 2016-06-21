@@ -17,27 +17,27 @@ var LEVEL_CORE = 3;
 
 module.exports = function(size, parent, material) {
   var noise_surface = new SimplexNoise(Math.random);
+  var noiseF_surface = 0.1;
+
   var noise_surface2 = new SimplexNoise(Math.random);
+  var noiseF_surface2 = 0.04;
+
   var noise_biomes = new SimplexNoise(Math.random);
   var noise_biomes2 = new SimplexNoise(Math.random);
   var noise_biomes3 = new SimplexNoise(Math.random);
-  var noiseF_surface = 0.1;
-  var noiseF_surface2 = 0.04;
-  var noiseF_surface3 = 0.05;
 
-  var num = size;
   var ground = new Chunks();
   var water = new Chunks();
   var bounds = {
     min: new THREE.Vector3(0, 0, 0),
-    size: new THREE.Vector3(num, num, num)
+    size: new THREE.Vector3(size, size, size)
   };
 
-  var center = [-num / 2 + 0.5, -num / 2 + 0.5, -num / 2 + 0.5];
+  var center = [-size / 2 + 0.5, -size / 2 + 0.5, -size / 2 + 0.5];
   var centerCoord = [
-    Math.floor(num / 2),
-    Math.floor(num / 2),
-    Math.floor(num / 2)
+    Math.floor(size / 2),
+    Math.floor(size / 2),
+    Math.floor(size / 2)
   ];
 
   // hash -> data
@@ -69,9 +69,9 @@ module.exports = function(size, parent, material) {
   parent.add(pivot);
 
   function init() {
-    for (var i = 0; i < num; i++) {
-      for (var j = 0; j < num; j++) {
-        for (var k = 0; k < num; k++) {
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < size; j++) {
+        for (var k = 0; k < size; k++) {
           ground.set(i, j, k, 1);
         }
       }
@@ -83,9 +83,9 @@ module.exports = function(size, parent, material) {
     for (var d = 0; d < 3; d++) {
       var u = (d + 1) % 3;
       var v = (d + 2) % 3;
-      [seaLevel, num - seaLevel - 1].forEach(function(c) {
-        for (var i = seaLevel; i < num - seaLevel; i++) {
-          for (var j = seaLevel; j < num - seaLevel; j++) {
+      [seaLevel, size - seaLevel - 1].forEach(function(c) {
+        for (var i = seaLevel; i < size - seaLevel; i++) {
+          for (var j = seaLevel; j < size - seaLevel; j++) {
             coord[d] = c;
             coord[u] = i;
             coord[v] = j;
@@ -112,9 +112,9 @@ module.exports = function(size, parent, material) {
 
   function removeFloating() {
     var map = {};
-    for (var i = 0; i < num; i++) {
-      for (var j = 0; j < num; j++) {
-        for (var k = 0; k < num; k++) {
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < size; j++) {
+        for (var k = 0; k < size; k++) {
           var hash = [i, j, k].join(',');
           map[hash] = {
             visited: false,
@@ -175,9 +175,9 @@ module.exports = function(size, parent, material) {
   };
 
   function generateBiomes() {
-    for (var i = 0; i < num; i++) {
-      for (var j = 0; j < num; j++) {
-        for (var k = 0; k < num; k++) {
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < size; j++) {
+        for (var k = 0; k < size; k++) {
           var v = ground.get(i, j, k);
           if (!v) {
             continue;
@@ -188,12 +188,9 @@ module.exports = function(size, parent, material) {
             Math.abs(j + center[1]),
             Math.abs(k + center[2]));
 
-          var isSeaLevel = false;
-          if ((num / 2 - d - seaLevel - 0.5) === 0) {
-            isSeaLevel = true;
-          }
+          var relSeaLevel = (size / 2 - d - seaLevel - 0.5);
 
-          d /= (num / 2);
+          d /= (size / 2);
 
           var noiseF = 0.05;
           var noiseF2 = 0.02;
@@ -219,7 +216,7 @@ module.exports = function(size, parent, material) {
           var biome = {
             value: value,
             value2: value3,
-            isSeaLevel: isSeaLevel
+            relSeaLevel: relSeaLevel
           };
 
           var level;
@@ -245,9 +242,9 @@ module.exports = function(size, parent, material) {
   };
 
   function generateGravityMap() {
-    for (var i = 0; i < num; i++) {
-      for (var j = 0; j < num; j++) {
-        for (var k = 0; k < num; k++) {
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < size; j++) {
+        for (var k = 0; k < size; k++) {
           var map = {};
           var gravity = getGravity(i, j, k);
           gravity.forEach(function(g) {
@@ -289,7 +286,7 @@ module.exports = function(size, parent, material) {
     var cRange = [];
 
     for (var i = 0; i < surfaceNum; i++) {
-      cRange.push(0 + i, num - 1 - i);
+      cRange.push(0 + i, size - 1 - i);
     }
 
     var coord = [];
@@ -297,8 +294,8 @@ module.exports = function(size, parent, material) {
       var u = (d + 1) % 3;
       var v = (d + 2) % 3;
       cRange.forEach(function(c) {
-        for (var j = 0; j < num; j++) {
-          for (var k = 0; k < num; k++) {
+        for (var j = 0; j < size; j++) {
+          for (var k = 0; k < size; k++) {
 
             var dis = Math.max(
               Math.abs(coord[0] + center[0]),
@@ -306,7 +303,7 @@ module.exports = function(size, parent, material) {
               Math.abs(coord[2] + center[2])
             );
 
-            var disBias = 1 - (num / 2 + 0.5 - dis) / surfaceNum;
+            var disBias = 1 - (size / 2 + 0.5 - dis) / surfaceNum;
 
             coord[d] = c;
             coord[u] = j;
@@ -344,9 +341,9 @@ module.exports = function(size, parent, material) {
   function generateTiles() {
     var coord = [];
     // Generate grasses
-    for (var i = 0; i < num; i++) {
-      for (var j = 0; j < num; j++) {
-        for (var k = 0; k < num; k++) {
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < size; j++) {
+        for (var k = 0; k < size; k++) {
           var v = ground.get(i, j, k);
           if (!v) {
             continue;
@@ -382,7 +379,7 @@ module.exports = function(size, parent, material) {
       var value = biome.value;
 
       if (level === LEVEL_SURFACE) {
-        if (biome.isSeaLevel) {
+        if (biome.relSeaLevel === 0) {
           var data = getData(coord[0], coord[1], coord[2]);
           var height = data.height;
           if (biome.value2 * height < -0.1) {
@@ -402,8 +399,13 @@ module.exports = function(size, parent, material) {
 
         // GRASS
 
+        // no grass below
+        // if (biome.relSeaLevel > 0) {
+        //   return SOIL;
+        // }
+
         // On edge
-        if (pos[d] === 0 || pos[d] === num - 1) {
+        if (pos[d] === 0 || pos[d] === size - 1) {
           return GRASS;
         }
 

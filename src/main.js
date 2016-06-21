@@ -13,6 +13,7 @@ var renderer = new THREE.WebGLRenderer({
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xBBD9F7);
+// renderer.setClearColor(0x222222);
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
   0.1, 1000);
@@ -124,15 +125,16 @@ function initScene() {
 };
 
 function loadResources() {
-  textures['building'] = textureLoader.load('textures/building.png');
-
   loadBlockMaterial('grass', 1);
   loadBlockMaterial('soil', 2);
   loadBlockMaterial('soil2', 3);
   loadBlockMaterial('stone', 4);
   loadBlockMaterial('sea', 5, 0.8);
   loadBlockMaterial('sand', 6);
-  loadBlockMaterial('cloud', 10, 0.7, null, function(m) {
+  loadBlockMaterial('wall', 7);
+  loadBlockMaterial('window', 8);
+
+  loadBlockMaterial('cloud', 10, 0.8, null, function(m) {
     m.emissive = new THREE.Color(0x888888);
   });
 };
@@ -289,12 +291,37 @@ initPostprocessing();
 initScene();
 
 // Init app
-var building = require('./entities/building')(textures['building'], noAoLayer, camera);
-entities.push(building);
+// var building = require('./entities/building')(material, noAoLayer, camera);
+// entities.push(building);
 
-var cloud = require('./entities/cloud')(noAoLayer, material);
+var cloud = require('./entities/cloud')(object, material);
 entities.push(cloud);
 
 var terrian = require('./entities/terrian')(size, object, material);
+
+// var Chunks = require('./voxel/chunks');
+// var chunks = new Chunks();
+// var len = 32;
+
+// var material = new THREE.MultiMaterial();
+// material.materials.push(null, new THREE.MeshBasicMaterial({
+//   color: 0xffffff,
+//   transparent: true,
+//   opacity: 0.5
+// }));
+
+// for (var i = 0; i < len; i++) {
+//   for (var j = 0; j < len; j++) {
+//     for (var k = 0; k < len; k++) {
+//       chunks.set(i, j, k, [1, 1, 1, 1, 1, 1]);
+//     }
+//   }
+// }
+
+// var meshChunks = require('./voxel/meshchunks');
+// var testObject = new THREE.Object3D();
+// testObject.scale.set(5, 5, 5);
+// scene.add(testObject);
+// meshChunks(chunks, testObject, material);
 
 animate();

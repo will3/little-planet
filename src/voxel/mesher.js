@@ -26,13 +26,13 @@ module.exports = function(chunk, f) {
   geometry.faceVertexUvs[0] = [];
   result.uvs.forEach(function(uv) {
     geometry.faceVertexUvs[0].push([
-      uv[0],
-      uv[1],
-      uv[2]
+      new THREE.Vector2().fromArray(uv[0]),
+      new THREE.Vector2().fromArray(uv[1]),
+      new THREE.Vector2().fromArray(uv[2])
     ], [
-      uv[2],
-      uv[3],
-      uv[0]
+      new THREE.Vector2().fromArray(uv[2]),
+      new THREE.Vector2().fromArray(uv[3]),
+      new THREE.Vector2().fromArray(uv[0])
     ]);
   });
 

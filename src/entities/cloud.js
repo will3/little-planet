@@ -23,7 +23,7 @@ module.exports = function(parent, material) {
   var noise_pressureF = 0.002;
   var cloudAmount = -0.9;
   var counter = 0;
-  var cooldown = 1.2;
+  var cooldown = 4.2;
 
   var allCoords = {};
 
@@ -159,19 +159,6 @@ module.exports = function(parent, material) {
             } else {
               data.nextCoord = data.neighbours[0];
             }
-            // if (absI > absJ) {
-            //   if (relI >= 0) {
-
-            //   } else {
-            //     data.nextCoord = data.neighbours[3];
-            //   }
-            // } else {
-            //   if (relJ > 0) {
-            //     data.nextCoord = data.neighbours[1];
-            //   } else {
-            //     data.nextCoord = data.neighbours[0];
-            //   }
-            // }
           }
         }
       }
