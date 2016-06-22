@@ -238,9 +238,6 @@ function onMouseDown(event) {
     Math.floor(localPoint.z)
   );
 
-  console.log(terrian.ground.getAt(coord));
-
-
   // if (intersects.length === 0) {
   //   return;
   // }
