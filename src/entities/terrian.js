@@ -1,8 +1,10 @@
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 
-var Chunks = require('../voxel/chunks');
-var meshChunks = require('../voxel/meshchunks');
+var Voxel = require('../voxel');
+var Chunks = Voxel.Chunks;
+var meshChunks = Voxel.meshChunks;
+var removeFloating = Voxel.removeFloating;
 
 var GRASS = 1;
 var SOIL = 2;
@@ -52,7 +54,7 @@ module.exports = function(size, parent, material) {
   init();
   generateGravityMap();
   generateSurface();
-  removeFloating();
+  removeFloating(ground, centerCoord);
   generateSea();
   generateBiomes();
   generateTiles();
@@ -62,10 +64,10 @@ module.exports = function(size, parent, material) {
   meshChunks(ground, pivot, material);
   meshChunks(water, pivot, material);
 
-  var center = new THREE.Vector3()
+  var positionCenter = new THREE.Vector3()
     .subVectors(bounds.min, bounds.size)
     .multiplyScalar(0.5);
-  pivot.position.copy(center);
+  pivot.position.copy(positionCenter);
   parent.add(pivot);
 
   function init() {
@@ -108,70 +110,6 @@ module.exports = function(size, parent, material) {
         }
       });
     }
-  };
-
-  function removeFloating() {
-    var map = {};
-    for (var i = 0; i < size; i++) {
-      for (var j = 0; j < size; j++) {
-        for (var k = 0; k < size; k++) {
-          var hash = [i, j, k].join(',');
-          map[hash] = {
-            visited: false,
-            coord: [i, j, k]
-          };
-        }
-      }
-    }
-
-    var leads = [centerCoord];
-
-    while (leads.length > 0) {
-      var result = visit([1, 0, 0]) ||
-        visit([0, 1, 0]) ||
-        visit([0, 0, 1]) ||
-        visit([-1, 0, 0]) ||
-        visit([0, -1, 0]) ||
-        visit([0, 0, -1]);
-
-      if (!result) {
-        leads.pop();
-      }
-    }
-
-    var count = 0;
-    for (var id in map) {
-      if (!map[id].visited) {
-        var coord = map[id].coord;
-        ground.set(coord[0], coord[1], coord[2], null);
-      }
-    }
-
-    function visit(dis) {
-      var current = leads[leads.length - 1];
-
-      var next = [current[0] + dis[0],
-        current[1] + dis[1],
-        current[2] + dis[2]
-      ];
-
-      var hash = next.join(',');
-
-      if (map[hash] == null) {
-        return false;
-      }
-
-      if (map[hash].visited) {
-        return false;
-      }
-
-      var v = ground.get(next[0], next[1], next[2]);
-      if (!!v) {
-        map[hash].visited = true;
-        leads.push(next);
-        return true;
-      }
-    };
   };
 
   function generateBiomes() {
@@ -246,7 +184,7 @@ module.exports = function(size, parent, material) {
       for (var j = 0; j < size; j++) {
         for (var k = 0; k < size; k++) {
           var map = {};
-          var gravity = getGravity(i, j, k);
+          var gravity = calcGravity(i, j, k);
           gravity.forEach(function(g) {
             map[g] = true;
           });
@@ -255,29 +193,29 @@ module.exports = function(size, parent, material) {
         }
       }
     }
+  };
 
-    function getGravity(i, j, k) {
-      var array = [
-        i + center[0],
-        j + center[1],
-        k + center[2]
-      ];
-      var max = -Infinity;
-      var indexes = [];
-      var f;
-      for (var d = 0; d < array.length; d++) {
-        var a = Math.abs(array[d]);
-        if (a > max) {
-          max = a;
-          f = d * 2 + (array[d] > 0 ? 0 : 1);
-          indexes = [f];
-        } else if (Math.abs(a - max) < 0.01) {
-          f = d * 2 + (array[d] > 0 ? 0 : 1);
-          indexes.push(f);
-        }
+  function calcGravity(i, j, k) {
+    var array = [
+      i + center[0],
+      j + center[1],
+      k + center[2]
+    ];
+    var max = -Infinity;
+    var indexes = [];
+    var f;
+    for (var d = 0; d < array.length; d++) {
+      var a = Math.abs(array[d]);
+      if (a > max) {
+        max = a;
+        f = d * 2 + (array[d] > 0 ? 0 : 1);
+        indexes = [f];
+      } else if (Math.abs(a - max) < 0.01) {
+        f = d * 2 + (array[d] > 0 ? 0 : 1);
+        indexes.push(f);
       }
-      return indexes;
-    };
+    }
+    return indexes;
   };
 
   function generateSurface() {
@@ -437,6 +375,7 @@ module.exports = function(size, parent, material) {
     ground: ground,
     water: water,
     bounds: bounds,
-    object: pivot
+    object: pivot,
+    calcGravity: calcGravity
   };
 };

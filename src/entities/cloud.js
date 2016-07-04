@@ -1,5 +1,4 @@
 var SimplexNoise = require('simplex-noise');
-var SimplexNoise = require('simplex-noise');
 
 var mesher = require('../voxel/mesher');
 var Dir = require('../dir');
@@ -18,10 +17,10 @@ module.exports = function(parent, material) {
   var noise1 = new SimplexNoise(Math.random);
   var noiseF1 = 0.1;
   var noise2 = new SimplexNoise(Math.random);
-  var noiseF2 = 0.02;
+  var noiseF2 = 0.05;
   var noise_pressure = new SimplexNoise(Math.random);
   var noise_pressureF = 0.002;
-  var cloudAmount = -0.9;
+  var cloudAmount = -1.0;
   var counter = 0;
   var cooldown = 4.2;
 

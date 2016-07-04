@@ -24,4 +24,21 @@ Dir.getUnitVector = function(dir) {
   }
 };
 
+Dir.getOpposite = function(dir) {
+  var opposites = {
+    0: 1,
+    1: 0,
+    2: 3,
+    3: 2,
+    4: 5,
+    5: 4
+  };
+
+  return opposites[dir];
+};
+
+Dir.isOpposite = function(dir, dir2) {
+  return Dir.getOpposite(dir) === dir2;
+};
+
 module.exports = Dir;

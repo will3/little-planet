@@ -1,5 +1,6 @@
 var THREE = require('three');
 var keycode = require('keycode');
+var Dir = require('./dir');
 
 var app = {};
 
@@ -27,7 +28,8 @@ var effectComposer;
 
 // Size
 var size = 32;
-var disScale = 12;
+var modelSize = 5;
+var disScale = 1.2 * modelSize;
 
 // Objects
 var object;
@@ -73,8 +75,8 @@ function initPostprocessing() {
   ssaoPass.uniforms['cameraNear'].value = camera.near;
   ssaoPass.uniforms['cameraFar'].value = camera.far;
   ssaoPass.uniforms['onlyAO'].value = (postprocessing.renderMode == 1);
-  ssaoPass.uniforms['aoClamp'].value = 0.3;
-  ssaoPass.uniforms['lumInfluence'].value = 0.5;
+  ssaoPass.uniforms['aoClamp'].value = 100.0;
+  ssaoPass.uniforms['lumInfluence'].value = 0.7;
 
   // Add pass to effect composer
   effectComposer = new THREE.EffectComposer(renderer);
@@ -113,12 +115,12 @@ function initScene() {
   cameraRight = new THREE.Vector3().crossVectors(cameraUp, cameraDir);
 
   object = new THREE.Object3D();
-  object.scale.set(10, 10, 10);
+  object.scale.set(modelSize, modelSize, modelSize);
   scene.add(object);
   noAoLayer = new THREE.Object3D();
   object.add(noAoLayer);
   var ambientLight = new THREE.AmbientLight(0x888888);
-  var directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  var directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
   directionalLight.position.set(0.3, 1.0, 0.5);
   object.add(ambientLight);
   object.add(directionalLight);
@@ -132,7 +134,9 @@ function loadResources() {
   loadBlockMaterial('sea', 5, 0.8);
   loadBlockMaterial('sand', 6);
   loadBlockMaterial('wall', 7);
-  loadBlockMaterial('window', 8);
+  loadBlockMaterial('trunk', 20);
+  loadBlockMaterial('leaf', 21, 0.8);
+  loadBlockMaterial('window', 8, 0.8);
 
   loadBlockMaterial('cloud', 10, 0.8, null, function(m) {
     m.emissive = new THREE.Color(0x888888);
@@ -222,6 +226,10 @@ function onMouseMove(event) {
 };
 
 function onMouseDown(event) {
+  if (terrian == null) {
+    return;
+  }
+
   // calculate objects intersecting the picking ray
   var intersects = raycaster.intersectObject(terrian.object, true);
   if (intersects.length === 0) {
@@ -229,14 +237,16 @@ function onMouseDown(event) {
   }
 
   var point = intersects[0].point.clone()
-    .add(raycasterDir.clone().multiplyScalar(0.01));
+    .add(raycasterDir.clone().multiplyScalar(-0.01));
 
-  var localPoint = terrian.object.worldToLocal(point);
+  var localPoint = tree.object.worldToLocal(point);
   var coord = new THREE.Vector3(
     Math.floor(localPoint.x),
     Math.floor(localPoint.y),
     Math.floor(localPoint.z)
   );
+
+  tree.add(coord);
 
   // if (intersects.length === 0) {
   //   return;
@@ -288,13 +298,13 @@ initPostprocessing();
 initScene();
 
 // Init app
-// var building = require('./entities/building')(material, noAoLayer, camera);
-// entities.push(building);
 
-var cloud = require('./entities/cloud')(object, material);
-entities.push(cloud);
+// var cloud = require('./entities/cloud')(object, material);
+// entities.push(cloud);
 
 var terrian = require('./entities/terrian')(size, object, material);
+
+var tree = require('./entities/tree')(terrian.object, material, terrian);
 
 // var Chunks = require('./voxel/chunks');
 // var chunks = new Chunks();

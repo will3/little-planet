@@ -37,4 +37,24 @@ Chunks.prototype.getOrigin = function(i, j, k) {
   ).multiplyScalar(this.chunkSize);
 };
 
+Chunks.prototype.visit = function(callback) {
+  for (var id in this.map) {
+    var chunk = this.map[id].chunk;
+    var origin = this.map[id].origin;
+    var shape = chunk.shape;
+
+    for (var i = 0; i < shape[0]; i++) {
+      for (var j = 0; j < shape[0]; j++) {
+        for (var k = 0; k < shape[0]; k++) {
+          var v = chunk.get(i, j, k);
+          if (!v) {
+            continue;
+          }
+          callback(i + origin.x, j + origin.y, k + origin.z, v);
+        }
+      }
+    }
+  }
+};
+
 module.exports = Chunks;
