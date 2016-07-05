@@ -26,7 +26,7 @@ module.exports = function(parent, material) {
 
   var allCoords = {};
 
-  var size = 39;
+  var size = 41;
   var centerNum = (size / 2);
   var center = new THREE.Vector3(-size / 2, -size / 2, -size / 2);
 

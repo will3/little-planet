@@ -2,6 +2,8 @@ var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 
 var Voxel = require('../voxel');
+var Dir = require('../dir');
+
 var Chunks = Voxel.Chunks;
 var meshChunks = Voxel.meshChunks;
 var removeFloating = Voxel.removeFloating;
@@ -20,13 +22,21 @@ var LEVEL_CORE = 3;
 module.exports = function(size, parent, material) {
   var noise_surface = new SimplexNoise(Math.random);
   var noiseF_surface = 0.1;
-
   var noise_surface2 = new SimplexNoise(Math.random);
   var noiseF_surface2 = 0.04;
 
   var noise_biomes = new SimplexNoise(Math.random);
   var noise_biomes2 = new SimplexNoise(Math.random);
   var noise_biomes3 = new SimplexNoise(Math.random);
+
+  var noise_biomes_trees = new SimplexNoise(Math.random);
+  var noiseF_biomes_trees = 0.1;
+
+  var noise_biomes_trees2 = new SimplexNoise(Math.random);
+  var noiseF_biomes_trees2 = 0.04;
+
+  var BIOME_VALUE_STONE = -0.8;
+  var BIOME_VALUE_SOIL = 0;
 
   var ground = new Chunks();
   var water = new Chunks();
@@ -47,21 +57,25 @@ module.exports = function(size, parent, material) {
   // biome: biome data
   // height: height of surface
   var dataMap = {};
+  var surfaceMap = {};
 
   var surfaceNum = 6;
   var seaLevel = 2;
 
   init();
   generateGravityMap();
-  generateSurface();
+  generateBumps();
   removeFloating(ground, centerCoord);
   generateSea();
   generateBiomes();
   generateTiles();
+  generateSurface();
 
   var pivot = new THREE.Object3D();
 
-  meshChunks(ground, pivot, material);
+  var groundObject = new THREE.Object3D();
+  pivot.add(groundObject);
+  meshChunks(ground, groundObject, material);
   meshChunks(water, pivot, material);
 
   var positionCenter = new THREE.Vector3()
@@ -133,20 +147,22 @@ module.exports = function(size, parent, material) {
           var noiseF = 0.05;
           var noiseF2 = 0.02;
           var noiseF3 = 0.02;
+
+          var rel = [i + center[0], j + center[1], k + center[2]];
           var value = noise_biomes.noise3D(
-            (i + center[0]) * noiseF,
-            (j + center[1]) * noiseF,
-            (k + center[2]) * noiseF);
+            rel[0] * noiseF,
+            rel[1] * noiseF,
+            rel[2] * noiseF);
 
           var value2 = noise_biomes2.noise3D(
-            (i + center[0]) * noiseF2,
-            (j + center[1]) * noiseF2,
-            (k + center[2]) * noiseF2);
+            rel[0] * noiseF2,
+            rel[1] * noiseF2,
+            rel[2] * noiseF2);
 
           var value3 = noise_biomes3.noise3D(
-            (i + center[0]) * noiseF3,
-            (j + center[1]) * noiseF3,
-            (k + center[2]) * noiseF3
+            rel[0] * noiseF3,
+            rel[1] * noiseF3,
+            rel[2] * noiseF3
           ) + value;
 
           value = value * 0.5 + value2 * 2.0;
@@ -156,6 +172,25 @@ module.exports = function(size, parent, material) {
             value2: value3,
             relSeaLevel: relSeaLevel
           };
+
+          var valueTree = noise_biomes_trees.noise3D(
+            rel[0] * noiseF_biomes_trees,
+            rel[1] * noiseF_biomes_trees,
+            rel[2] * noiseF_biomes_trees
+          ) + noise_biomes_trees2.noise3D(
+            rel[0] * noiseF_biomes_trees2,
+            rel[1] * noiseF_biomes_trees2,
+            rel[2] * noiseF_biomes_trees2
+          );
+
+          // BIOME bias for tree
+          if (value < BIOME_VALUE_STONE) {
+            valueTree -= 1.0;
+          } else if (value < BIOME_VALUE_SOIL) {
+            valueTree -= 0.5;
+          }
+
+          biome.tree = valueTree;
 
           var level;
 
@@ -218,7 +253,7 @@ module.exports = function(size, parent, material) {
     return indexes;
   };
 
-  function generateSurface() {
+  function generateBumps() {
     // Generate surface
 
     var cRange = [];
@@ -261,7 +296,6 @@ module.exports = function(size, parent, material) {
               (coord[2] + center[2] + offset2[2]) * noiseF_surface2);
 
             value =
-              (Math.pow(value / 1.5, 1) * disBias * 0) +
               (Math.pow(value2 / 1.5, 1) * disBias) +
               (-Math.pow(disBias, 1.0) * 1.0 + 0.6);
 
@@ -274,6 +308,38 @@ module.exports = function(size, parent, material) {
         }
       });
     }
+  };
+
+  function generateSurface() {
+    ground.visit(function(i, j, k, v) {
+      var data = getData(i, j, k);
+      var surface = data.surface || {};
+      var gravity = data.gravity;
+
+      for (var f in gravity) {
+        var result = isSurface(i, j, k, f);
+
+        if (result) {
+          var hash = [i, j, k, f].join(',');
+          surfaceMap[hash] = [i, j, k, f];
+        }
+
+        var gravity = data.gravity;
+        if (gravity[f]) {
+          surface[f] = result;
+        }
+      }
+    });
+  };
+
+  function isSurface(i, j, k, f) {
+    var d = Math.floor(f / 2); // 0 1 2 
+    var dd = (f - d * 2) ? -1 : 1; // -1 or 1
+
+    var coord = [i, j, k];
+    coord[d] += dd;
+
+    return !ground.get(coord[0], coord[1], coord[2]) && !water.get(coord[0], coord[1], coord[2]);
   };
 
   function generateTiles() {
@@ -317,6 +383,8 @@ module.exports = function(size, parent, material) {
       var value = biome.value;
 
       if (level === LEVEL_SURFACE) {
+
+        // If at sea level, generate sand
         if (biome.relSeaLevel === 0) {
           var data = getData(coord[0], coord[1], coord[2]);
           var height = data.height;
@@ -329,9 +397,9 @@ module.exports = function(size, parent, material) {
           }
         }
 
-        if (value < -0.8) {
+        if (value < BIOME_VALUE_STONE) {
           return STONE;
-        } else if (value < 0) {
+        } else if (value < BIOME_VALUE_SOIL) {
           return SOIL;
         }
 
@@ -376,6 +444,9 @@ module.exports = function(size, parent, material) {
     water: water,
     bounds: bounds,
     object: pivot,
-    calcGravity: calcGravity
+    calcGravity: calcGravity,
+    surfaceMap: surfaceMap,
+    groundObject: groundObject,
+    getData: getData
   };
 };

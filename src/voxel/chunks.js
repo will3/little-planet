@@ -1,8 +1,8 @@
 var Chunk = require('./chunk');
 
-var Chunks = function() {
+var Chunks = function(chunkSize) {
   this.map = {};
-  this.chunkSize = 16;
+  this.chunkSize = chunkSize || 16;
 };
 
 Chunks.prototype.set = function(i, j, k, v) {
@@ -10,7 +10,7 @@ Chunks.prototype.set = function(i, j, k, v) {
   var hash = origin.toArray().join(',');
   if (this.map[hash] == null) {
     this.map[hash] = {
-      chunk: new Chunk(),
+      chunk: new Chunk([this.chunkSize, this.chunkSize, this.chunkSize]),
       origin: origin
     }
   }

@@ -14,25 +14,30 @@ var LEAF = [21, 21, 21, 21, 21, 21];
 module.exports = function(parent, blockMaterial, terrian) {
   var chunks = new Chunks();
 
-  function add(coord) {
+  function add(coord, dir) {
 
     var shapeRatio = 2;
     var leafHeight = 3;
     var density = 0.8;
-    var shape1 = Math.random() * 4 + 4;
+    var size1 = 3;
+    var size2 = 3;
+    var shape1 = Math.random() * size1 + size2;
     var shape2 = shape1 * shapeRatio;
     var trunkHeight = leafHeight + shape2 - 4;
 
     var radius = shape1 * Math.sqrt(2) / 2;
 
-    var terrianCoord = coord.clone().multiplyScalar(self.scale);
-    var gravity = terrian.calcGravity(terrianCoord.x, terrianCoord.y, terrianCoord.z);
-    var dir = Dir.getOpposite(gravity[Math.floor(gravity.length * Math.random())]);
+    if (dir == null) {
+      var terrianCoord = coord.clone().multiplyScalar(self.scale);
+      var gravity = terrian.calcGravity(terrianCoord.x, terrianCoord.y, terrianCoord.z);
+      dir = Dir.getOpposite(gravity[Math.floor(gravity.length * Math.random())]);
+    }
 
     var upVector = new THREE.Vector3(0, 1, 0);
     var unitVector = Dir.getUnitVector(dir);
     var quat = new THREE.Quaternion().setFromUnitVectors(upVector, unitVector);
     var d = Math.floor(dir / 2);
+    var side = dir % 2 === 0;
 
     var leafShape = [shape1, shape2, shape1];
 
@@ -46,6 +51,9 @@ module.exports = function(parent, blockMaterial, terrian) {
 
     for (var i = 0; i < trunkHeight; i++) {
       var c = new THREE.Vector3(0, i, 0).applyQuaternion(quat);
+      if (side) {
+        c.add(unitVector);
+      }
 
       roundVector(c);
       chunks2.set(c.x, c.y, c.z, TRUNK);
@@ -65,7 +73,7 @@ module.exports = function(parent, blockMaterial, terrian) {
       var maxDis = (shape2 - j) / shape2 * radius;
 
       var diff = maxDis - dis;
-      if (diff < 0) {
+      if (diff < 0.0) {
         return;
       }
 
@@ -79,6 +87,10 @@ module.exports = function(parent, blockMaterial, terrian) {
 
       roundVector(c);
 
+      if (side) {
+        c.add(unitVector);
+      }
+
       chunks2.set(c.x, c.y, c.z, LEAF);
     });
 
@@ -91,13 +103,67 @@ module.exports = function(parent, blockMaterial, terrian) {
   function start() {
     object.scale.set(self.scale, self.scale, self.scale);
     parent.add(object);
+
+    var count = 0;
+    for (var id in terrian.surfaceMap) {
+      var surface = terrian.surfaceMap[id];
+
+      var data = terrian.getData(surface[0], surface[1], surface[2]);
+
+      // No trees under sea level
+      if (data.biome.relSeaLevel > 0) {
+        continue;
+      }
+
+      // How sparse trees should be
+      if (Math.random() < 0.7) {
+        continue;
+      }
+
+      if (data.biome.tree < 0.5) {
+        continue;
+      }
+
+      // if (count > 200) {
+      //   break;
+      // }
+
+      var f = Dir.getOpposite(surface[3]);
+
+      // Start from center of block, extend for half a block
+      var coord =
+        new THREE.Vector3(surface[0], surface[1], surface[2])
+        .add(new THREE.Vector3(0.5, 0.5, 0.5))
+        .add(Dir.getUnitVector(f).multiplyScalar(0.5));
+
+      // randomize uv coord
+      var d = Math.floor(f / 2);
+      var u = (d + 1) % 3;
+      var v = (d + 2) % 3;
+
+      var uv = [0, 0, 0];
+      uv[u] = Math.random() - 0.5;
+      uv[v] = Math.random() - 0.5;
+
+      coord.add(new THREE.Vector3().fromArray(uv));
+
+      // 1 tree per terrian grid
+      coord.multiplyScalar(1 / self.scale);
+
+      coord.x = Math.round(coord.x);
+      coord.y = Math.round(coord.y);
+      coord.z = Math.round(coord.z);
+      add(coord, f);
+
+      count++;
+    };
   };
 
   var object = new THREE.Object3D();
   var self = {
     add: add,
     object: object,
-    scale: 0.2
+    scale: (1 / 3.0)
   };
 
   start();

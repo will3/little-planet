@@ -135,7 +135,8 @@ function loadResources() {
   loadBlockMaterial('sand', 6);
   loadBlockMaterial('wall', 7);
   loadBlockMaterial('trunk', 20);
-  loadBlockMaterial('leaf', 21, 0.8);
+  loadBlockMaterial('leaf', 21);
+
   loadBlockMaterial('window', 8, 0.8);
 
   loadBlockMaterial('cloud', 10, 0.8, null, function(m) {
@@ -157,12 +158,12 @@ function loadBlockMaterial(name, index, alpha, materialType, transform) {
     map: texture
   });
 
-  if (alpha !== undefined) {
+  if (alpha != null) {
     m.transparent = true;
     m.opacity = alpha;
   }
 
-  if (transform !== undefined) {
+  if (transform != null) {
     transform(m);
   }
 
@@ -279,6 +280,10 @@ function onMouseUp(event) {
 function onKeyDown(e) {
   var key = keycode(e);
   keyholds[key] = true;
+
+  if (key === 'g') {
+    terrian.groundObject.visible = !terrian.groundObject.visible;
+  }
 };
 
 function onKeyUp(e) {
@@ -299,8 +304,8 @@ initScene();
 
 // Init app
 
-// var cloud = require('./entities/cloud')(object, material);
-// entities.push(cloud);
+var cloud = require('./entities/cloud')(object, material);
+entities.push(cloud);
 
 var terrian = require('./entities/terrian')(size, object, material);
 
