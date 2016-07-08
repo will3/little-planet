@@ -9,19 +9,33 @@ Dir.FRONT = 5;
 
 Dir.getUnitVector = function(dir) {
   switch (dir) {
+    case "0":
     case Dir.LEFT:
       return new THREE.Vector3(-1, 0, 0)
+    case "1":
     case Dir.RIGHT:
       return new THREE.Vector3(1, 0, 0)
+    case "2":
     case Dir.BOTTOM:
       return new THREE.Vector3(0, -1, 0)
+    case "3":
     case Dir.UP:
       return new THREE.Vector3(0, 1, 0)
+    case "4":
     case Dir.BACK:
       return new THREE.Vector3(0, 0, -1)
+    case "5":
     case Dir.FRONT:
       return new THREE.Vector3(0, 0, 1)
   }
+};
+
+var getQuatResult = {};
+Dir.getQuat = function(dir) {
+  if (getQuatResult[dir] == null) {
+    getQuatResult[dir] = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), Dir.getUnitVector(dir));
+  }
+  return getQuatResult[dir];
 };
 
 Dir.getOpposite = function(dir) {

@@ -240,37 +240,23 @@ function onMouseDown(event) {
   var point = intersects[0].point.clone()
     .add(raycasterDir.clone().multiplyScalar(-0.01));
 
-  var localPoint = tree.object.worldToLocal(point);
+  // // Add tree at clicked point
+  // var localPoint = tree.object.worldToLocal(point);
+  // var coord = new THREE.Vector3(
+  //   Math.floor(localPoint.x),
+  //   Math.floor(localPoint.y),
+  //   Math.floor(localPoint.z)
+  // );  
+  // tree.add(coord);
+
+  // Change critter position
+  var localPoint = terrian.object.worldToLocal(point);
   var coord = new THREE.Vector3(
     Math.floor(localPoint.x),
     Math.floor(localPoint.y),
     Math.floor(localPoint.z)
   );
-
-  tree.add(coord);
-
-  // if (intersects.length === 0) {
-  //   return;
-  // }
-
-  // var point = intersects[0].point;
-  // point.add(raycaster.ray.direction.clone().normalize().multiplyScalar(0.01));
-  // point = mesh.worldToLocal(point);
-
-  // var coord = [
-  //   Math.floor(point.x),
-  //   Math.floor(point.y),
-  //   Math.floor(point.z)
-  // ];
-  // terrian.chunk.set(coord[0], coord[1], coord[2], null);
-
-  // mesh.parent.remove(mesh);
-  // geometry.dispose();
-  // geometry = mesher(terrian.chunk);
-
-  // mesh = new THREE.Mesh(geometry, material);
-  // object.add(mesh);
-  // mesh.position.copy(center);
+  critter.setCoord(coord);
 };
 
 function onMouseUp(event) {
@@ -310,6 +296,9 @@ entities.push(cloud);
 var terrian = require('./entities/terrian')(size, object, material);
 
 var tree = require('./entities/tree')(terrian.object, material, terrian);
+
+var critter = require('./entities/critter')(terrian.object, material, terrian);
+entities.push(critter);
 
 // var Chunks = require('./voxel/chunks');
 // var chunks = new Chunks();

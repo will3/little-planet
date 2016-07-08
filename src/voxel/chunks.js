@@ -57,4 +57,27 @@ Chunks.prototype.visit = function(callback) {
   }
 };
 
+Chunks.prototype.clear = function() {
+  for (var id in this.map) {
+    var chunk = this.map[id];
+    if (chunk.mesh != null) {
+      chunk.mesh.parent.remove(chunk.mesh);
+      chunk.mesh.geometry.dispose();
+    }
+  }
+  this.map = {};
+
+  return this;
+};
+
+Chunks.prototype.deserialize = function(data, offset) {
+  offset = offset || new THREE.Vector3(0, 0, 0);
+  var self = this;
+  data.forEach(function(v) {
+    self.set(v[0] + offset.x, v[1] + offset.y, v[2] + offset.z, v[3]);
+  });
+
+  return this;
+};
+
 module.exports = Chunks;

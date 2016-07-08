@@ -14,14 +14,16 @@ var LEAF = [21, 21, 21, 21, 21, 21];
 module.exports = function(parent, blockMaterial, terrian) {
   var chunks = new Chunks();
 
+  var sparse = 0.2;
+
   function add(coord, dir) {
 
     var shapeRatio = 2;
-    var leafHeight = 3;
+    var leafHeight = 2;
     var density = 0.8;
-    var size1 = 3;
+    var size1 = 4;
     var size2 = 3;
-    var shape1 = Math.random() * size1 + size2;
+    var shape1 = Math.pow(Math.random(), 1.5) * size1 + size2;
     var shape2 = shape1 * shapeRatio;
     var trunkHeight = leafHeight + shape2 - 4;
 
@@ -78,7 +80,7 @@ module.exports = function(parent, blockMaterial, terrian) {
       }
 
       if (diff < 1) {
-        if (diff > Math.random()) {
+        if (Math.pow(diff, 0.5) > Math.random()) {
           return;
         }
       }
@@ -116,7 +118,7 @@ module.exports = function(parent, blockMaterial, terrian) {
       }
 
       // How sparse trees should be
-      if (Math.random() < 0.7) {
+      if (Math.random() > sparse) {
         continue;
       }
 

@@ -215,13 +215,16 @@ module.exports = function(size, parent, material) {
   };
 
   function generateGravityMap() {
-    for (var i = 0; i < size; i++) {
-      for (var j = 0; j < size; j++) {
-        for (var k = 0; k < size; k++) {
+    var padding = 2;
+    for (var i = -padding; i < size + padding; i++) {
+      for (var j = -padding; j < size + padding; j++) {
+        for (var k = -padding; k < size + padding; k++) {
           var map = {};
           var gravity = calcGravity(i, j, k);
           gravity.forEach(function(g) {
-            map[g] = true;
+            map[g] = {
+              dir: g
+            };
           });
           var data = getData(i, j, k);
           data.gravity = map;
