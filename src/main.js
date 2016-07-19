@@ -1,12 +1,11 @@
 var THREE = require('three');
 var keycode = require('keycode');
 var Dir = require('./dir');
-var finalShader = require('./finalshader');
 var config = require('./config');
 var app = {};
-
 var env = config.env || 'production';
 
+// Init stats
 if (env === 'dev') {
   var stats = new Stats();
   document.body.appendChild(stats.dom);
@@ -20,7 +19,7 @@ var renderer = new THREE.WebGLRenderer();
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xBBD9F7);
-// renderer.setClearColor(0x222222);
+
 var scene = new THREE.Scene();
 var fov = 60;
 var zoomSpeed = 1.1;
@@ -36,7 +35,7 @@ var effectComposer;
 var finalComposer;
 
 // Size
-var size = 32;
+var size = 16;
 var modelSize = 5;
 var disScale = 1.2 * modelSize;
 
@@ -47,8 +46,8 @@ var noAoLayer;
 var entities = [];
 
 // Materials, Textures
-var material = new THREE.MultiMaterial();
-material.materials = [null];
+var blockMaterial = new THREE.MultiMaterial();
+blockMaterial.materials = [null];
 var textureLoader = new THREE.TextureLoader();
 var blockTextures = [];
 var textures = {};
@@ -61,9 +60,6 @@ var raycasterDir;
 
 // frame time
 var dt = 1 / 60;
-var bluriness = 1;
-
-var swapped = false;
 
 function initPostprocessing() {
   var width = window.innerWidth;
@@ -91,12 +87,12 @@ function initPostprocessing() {
   ssaoPass.uniforms['onlyAO'].value = (postprocessing.renderMode == 1);
   ssaoPass.uniforms['aoClamp'].value = 100.0;
   ssaoPass.uniforms['lumInfluence'].value = 0.7;
-ssaoPass.renderToScreen = true;
+  ssaoPass.renderToScreen = true;
 
   // Add pass to effect composer
   effectComposer = new THREE.EffectComposer(renderer);
   effectComposer.addPass(renderPass);
-  effectComposer.addPass(ssaoPass);    
+  effectComposer.addPass(ssaoPass);
 };
 
 function onWindowResize() {
@@ -143,12 +139,7 @@ function initScene() {
   var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
   directionalLight2.position.set(-0.3, -1.0, -0.5);
   object.add(directionalLight2);
-
-
 };
-
-var materialsCopy = [];
-var materialsSwap = [];
 
 function loadResources() {
   loadBlockMaterial('grass', 1);
@@ -161,19 +152,15 @@ function loadResources() {
 
   loadBlockMaterial('window', 8, 0.8);
 
-  var m = loadBlockMaterial('cloud', 10, 0.7);
-  // m.emissive = new THREE.Color(0x888888);
+  loadBlockMaterial('cloud', 10, 0.7);
 
   loadBlockMaterial('trunk', 20);
   loadBlockMaterial('leaf', 21);
 
-  loadBlockMaterial('glow', 30, null, true);
-
-  materialsCopy = material.materials;
+  loadBlockMaterial('glow', 30, null);
 };
 
-function loadBlockMaterial(name, index, alpha, skipSwap) {
-  skipSwap = skipSwap || false;
+function loadBlockMaterial(name, index, alpha) {
   var texture = textureLoader.load('textures/' + name + '.png');
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
@@ -185,33 +172,14 @@ function loadBlockMaterial(name, index, alpha, skipSwap) {
     map: texture
   });
 
-  var swapMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000000
-  });
-
   if (alpha != null) {
-    m.transparent = swapMaterial.transparent = true;
-    m.opacity = swapMaterial.opacity = alpha;
+    m.transparent = true;
+    m.opacity = alpha;
   }
 
-  material.materials[index] = m;
-
-  if (!skipSwap) {
-    materialsSwap[index] = swapMaterial;
-  } else {
-    materialsSwap[index] = m;
-  }
+  blockMaterial.materials[index] = m;
 
   return m;
-};
-
-function swap(flag) {
-  swapped = flag;
-  if (flag) {
-    material.materials = materialsSwap;
-  } else {
-    material.materials = materialsCopy;
-  }
 };
 
 function render() {
@@ -226,7 +194,7 @@ function render() {
     renderer.render(scene, camera, depthRenderTarget, true);
     noAoLayer.visible = true;
     scene.overrideMaterial = null;
-    
+
     effectComposer.render();
   } else {
     renderer.render(scene, camera);
@@ -315,19 +283,8 @@ function onMouseDown(event) {
 };
 
 function onClickedSurface(event, coord, f) {
-  // if (event.button === 0) {
-  //   var critter = require('./entities/critter')(terrian.object, material, terrian);
-  //   entities.push(critter);
-  //   critter.setCoord(coord, f);
-  //   critters.push(critter);
-  // } else {
-  //   critters.forEach(function(critter) {
-  //     critter.setCoord(coord, f);
-  //   });
-  // }
+  
 };
-
-var critters = [];
 
 function onMouseUp(event) {
 
@@ -370,36 +327,11 @@ initScene();
 
 // Init app
 
-var cloud = require('./entities/cloud')(object, material);
+var cloud = require('./entities/cloud')(size + 11, object, blockMaterial);
 entities.push(cloud);
 
-var terrian = require('./entities/terrian')(size, object, material);
+var terrian = require('./entities/terrian')(size, object, blockMaterial);
 
-var tree = require('./entities/tree')(terrian.object, material, terrian);
-
-// var Chunks = require('./voxel/chunks');
-// var chunks = new Chunks();
-// var len = 32;
-
-// var material = new THREE.MultiMaterial();
-// material.materials.push(null, new THREE.MeshBasicMaterial({
-//   color: 0xffffff,
-//   transparent: true,
-//   opacity: 0.5
-// }));
-
-// for (var i = 0; i < len; i++) {
-//   for (var j = 0; j < len; j++) {
-//     for (var k = 0; k < len; k++) {
-//       chunks.set(i, j, k, [1, 1, 1, 1, 1, 1]);
-//     }
-//   }
-// }
-
-// var meshChunks = require('./voxel/meshchunks');
-// var testObject = new THREE.Object3D();
-// testObject.scale.set(5, 5, 5);
-// scene.add(testObject);
-// meshChunks(chunks, testObject, material);
+var tree = require('./entities/tree')(terrian.object, blockMaterial, terrian);
 
 animate();

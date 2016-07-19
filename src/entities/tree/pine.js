@@ -11,9 +11,9 @@ module.exports = function(coord, dir) {
   // Leaf height / width
   var shapeRatio = 2;
   // Density of leafs
-  var density = 0.8;
+  var density = 0.9;
   // Variable size
-  var varSize = 4;
+  var varSize = 3;
   // Base size
   var baseSize = 3;
   // Curve for variable size
@@ -77,10 +77,8 @@ module.exports = function(coord, dir) {
       return;
     }
 
-    if (diff < 1) {
-      if (Math.pow(diff, 0.5) > Math.random()) {
-        return;
-      }
+    if (diff < 0.5) {
+      return;
     }
 
     c.applyQuaternion(quat);

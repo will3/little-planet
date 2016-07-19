@@ -14,7 +14,8 @@ var LEAF = [21, 21, 21, 21, 21, 21];
 module.exports = function(parent, blockMaterial, terrian) {
   var chunks = new Chunks();
 
-  var sparse = 0.1;
+  var sparse = 0.2;
+  var treeNum = 0.5;
 
   function add(coord, dir) {
 
@@ -25,6 +26,7 @@ module.exports = function(parent, blockMaterial, terrian) {
   };
 
   function start() {
+    var inverseScale = 1 / self.scale;
     object.scale.set(self.scale, self.scale, self.scale);
     parent.add(object);
 
@@ -41,7 +43,7 @@ module.exports = function(parent, blockMaterial, terrian) {
         return;
       }
 
-      if (data.biome.tree < 0.5) {
+      if (data.biome.tree < treeNum) {
         return;
       }
 
@@ -59,8 +61,6 @@ module.exports = function(parent, blockMaterial, terrian) {
       var v = (d + 2) % 3;
 
       var uv = [0, 0, 0];
-      uv[u] = Math.random() - 0.5;
-      uv[v] = Math.random() - 0.5;
 
       coord.add(new THREE.Vector3().fromArray(uv));
 
@@ -70,6 +70,12 @@ module.exports = function(parent, blockMaterial, terrian) {
       coord.x = Math.round(coord.x);
       coord.y = Math.round(coord.y);
       coord.z = Math.round(coord.z);
+
+      var array = coord.toArray();
+      array[u] -= Math.floor(Math.random() * inverseScale);
+      array[v] -= Math.floor(Math.random() * inverseScale);
+      coord.fromArray(array);
+
       add(coord, f);
 
       surface.blocked = true;

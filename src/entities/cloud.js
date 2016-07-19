@@ -7,7 +7,7 @@ var meshChunks = require('../voxel/meshchunks');
 
 var CLOUD = 10;
 
-module.exports = function(parent, material) {
+module.exports = function(size, parent, material) {
 
   var chunks = new Chunks();
   var dataMap = {};
@@ -26,7 +26,6 @@ module.exports = function(parent, material) {
 
   var allCoords = {};
 
-  var size = 43;
   var centerNum = (size / 2);
   var center = new THREE.Vector3(-size / 2, -size / 2, -size / 2);
 
