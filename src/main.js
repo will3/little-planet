@@ -1,22 +1,30 @@
 var THREE = require('three');
 var keycode = require('keycode');
 var Dir = require('./dir');
-
+var finalShader = require('./finalshader');
+var config = require('./config');
 var app = {};
 
+var env = config.env || 'production';
+
+if (env === 'dev') {
+  var stats = new Stats();
+  document.body.appendChild(stats.dom);
+}
+
 // Post processing setting
-var postprocessing = { enabled: true, renderMode: 0 };
+var postprocessing = { enabled: true, renderMode: 0, glow: false };
 
 // Renderer, scene, camera
-var renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
+var renderer = new THREE.WebGLRenderer();
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xBBD9F7);
 // renderer.setClearColor(0x222222);
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,
+var fov = 60;
+var zoomSpeed = 1.1;
+var camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight,
   0.1, 1000);
 var cameraUp, cameraDir, cameraRight;
 
@@ -25,6 +33,8 @@ var depthMaterial;
 var depthRenderTarget;
 var ssaoPass;
 var effectComposer;
+var glowComposer;
+var finalComposer;
 
 // Size
 var size = 32;
@@ -52,8 +62,13 @@ var raycasterDir;
 
 // frame time
 var dt = 1 / 60;
+var bluriness = 1;
+
+var swapped = false;
 
 function initPostprocessing() {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
 
   // Setup render pass
   var renderPass = new THREE.RenderPass(scene, camera);
@@ -68,7 +83,7 @@ function initPostprocessing() {
 
   // Setup SSAO pass
   ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-  ssaoPass.renderToScreen = true;
+
   //ssaoPass.uniforms[ "tDiffuse" ].value will be set by ShaderPass
   ssaoPass.uniforms["tDepth"].value = depthRenderTarget.texture;
   ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
@@ -83,6 +98,31 @@ function initPostprocessing() {
   effectComposer.addPass(renderPass);
   effectComposer.addPass(ssaoPass);
 
+  if (postprocessing.glow) {
+    var renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBufer: false };
+    var renderTargetGlow = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
+
+    glowComposer = new THREE.EffectComposer(renderer, renderTargetGlow);
+
+    var renderModelGlow = new THREE.RenderPass(scene, camera);
+
+    var effectHBlur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
+    var effectVBlur = new THREE.ShaderPass(THREE.VerticalBlurShader);
+    effectHBlur.uniforms['h'].value = bluriness / (width);
+    effectVBlur.uniforms['v'].value = bluriness / (height);
+
+    glowComposer.addPass(renderModelGlow);
+    glowComposer.addPass(effectHBlur);
+    glowComposer.addPass(effectVBlur);
+
+    var finalPass = new THREE.ShaderPass(finalShader);
+    finalPass.needsSwap = true;
+    finalPass.renderToScreen = true;
+    finalPass.uniforms['tGlow'].value = renderTargetGlow.texture;
+    effectComposer.addPass(finalPass);
+  } else {
+    ssaoPass.renderToScreen = true;
+  }
 };
 
 function onWindowResize() {
@@ -120,11 +160,21 @@ function initScene() {
   noAoLayer = new THREE.Object3D();
   object.add(noAoLayer);
   var ambientLight = new THREE.AmbientLight(0x888888);
+  object.add(ambientLight);
+
   var directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
   directionalLight.position.set(0.3, 1.0, 0.5);
-  object.add(ambientLight);
   object.add(directionalLight);
+
+  var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+  directionalLight2.position.set(-0.3, -1.0, -0.5);
+  object.add(directionalLight2);
+
+
 };
+
+var materialsCopy = [];
+var materialsSwap = [];
 
 function loadResources() {
   loadBlockMaterial('grass', 1);
@@ -134,17 +184,22 @@ function loadResources() {
   loadBlockMaterial('sea', 5, 0.8);
   loadBlockMaterial('sand', 6);
   loadBlockMaterial('wall', 7);
-  loadBlockMaterial('trunk', 20);
-  loadBlockMaterial('leaf', 21);
 
   loadBlockMaterial('window', 8, 0.8);
 
-  loadBlockMaterial('cloud', 10, 0.8, null, function(m) {
-    m.emissive = new THREE.Color(0x888888);
-  });
+  var m = loadBlockMaterial('cloud', 10, 0.7);
+  // m.emissive = new THREE.Color(0x888888);
+
+  loadBlockMaterial('trunk', 20);
+  loadBlockMaterial('leaf', 21);
+
+  loadBlockMaterial('glow', 30, null, true);
+
+  materialsCopy = material.materials;
 };
 
-function loadBlockMaterial(name, index, alpha, materialType, transform) {
+function loadBlockMaterial(name, index, alpha, skipSwap) {
+  skipSwap = skipSwap || false;
   var texture = textureLoader.load('textures/' + name + '.png');
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
@@ -152,34 +207,62 @@ function loadBlockMaterial(name, index, alpha, materialType, transform) {
   texture.wrapT = THREE.RepeatWrapping;
   blockTextures.push(texture);
 
-  materialType = materialType || THREE.MeshLambertMaterial;
-
-  var m = new materialType({
+  var m = new THREE.MeshBasicMaterial({
     map: texture
   });
 
-  if (alpha != null) {
-    m.transparent = true;
-    m.opacity = alpha;
-  }
+  var swapMaterial = new THREE.MeshBasicMaterial({
+    color: 0x000000
+  });
 
-  if (transform != null) {
-    transform(m);
+  if (alpha != null) {
+    m.transparent = swapMaterial.transparent = true;
+    m.opacity = swapMaterial.opacity = alpha;
   }
 
   material.materials[index] = m;
+
+  if (!skipSwap) {
+    materialsSwap[index] = swapMaterial;
+  } else {
+    materialsSwap[index] = m;
+  }
+
+  return m;
+};
+
+function swap(flag) {
+  swapped = flag;
+  if (flag) {
+    material.materials = materialsSwap;
+  } else {
+    material.materials = materialsCopy;
+  }
 };
 
 function render() {
+  if (env === 'dev') {
+    stats.begin();
+  }
+
   if (postprocessing.enabled) {
-    noAoLayer.visible = false;
     // Render depth into depthRenderTarget
+    noAoLayer.visible = false;
     scene.overrideMaterial = depthMaterial;
     renderer.render(scene, camera, depthRenderTarget, true);
-
     noAoLayer.visible = true;
-    // Render renderPass and SSAO shaderPass
     scene.overrideMaterial = null;
+
+    // Render renderPass and SSAO shaderPass
+
+    if (postprocessing.glow) {
+      renderer.setClearColor(0x000000);
+      swap(true);
+      glowComposer.render();
+      renderer.setClearColor(0xBBD9F7);
+      swap(false);
+
+    }
     effectComposer.render();
   } else {
     renderer.render(scene, camera);
@@ -207,6 +290,10 @@ function render() {
   axis = cameraRight.clone().applyQuaternion(quatInverse).normalize();
   object.quaternion
     .multiply(new THREE.Quaternion().setFromAxisAngle(axis, rotateX));
+
+  if (env === 'dev') {
+    stats.end();
+  }
 };
 
 function animate() {
@@ -256,8 +343,36 @@ function onMouseDown(event) {
     Math.floor(localPoint.y),
     Math.floor(localPoint.z)
   );
-  critter.setCoord(coord);
+
+  var point2 = intersects[0].point.clone()
+    .add(raycasterDir.clone().multiplyScalar(0.01));
+  var localPoint2 = terrian.object.worldToLocal(point2);
+  var coord2 = new THREE.Vector3(
+    Math.floor(localPoint2.x),
+    Math.floor(localPoint2.y),
+    Math.floor(localPoint2.z)
+  );
+
+  var unitVector = coord2.clone().sub(coord);
+  var f = Dir.unitVectorToDir(unitVector);
+  if (f != null) {
+
+    if (event.button === 0) {
+      var critter = require('./entities/critter')(terrian.object, material, terrian);
+      entities.push(critter);
+      critter.setCoord(coord2, f);
+      critters.push(critter);
+    } else {
+      critters.forEach(function(critter) {
+        critter.setCoord(coord2, f);
+      });
+    }
+  }
+
+
 };
+
+var critters = [];
 
 function onMouseUp(event) {
 
@@ -269,6 +384,16 @@ function onKeyDown(e) {
 
   if (key === 'g') {
     terrian.groundObject.visible = !terrian.groundObject.visible;
+  }
+
+  if (key === '=') {
+    camera.fov /= zoomSpeed;
+    camera.updateProjectionMatrix();
+  }
+
+  if (key === '-') {
+    camera.fov *= zoomSpeed;
+    camera.updateProjectionMatrix();
   }
 };
 
@@ -296,9 +421,6 @@ entities.push(cloud);
 var terrian = require('./entities/terrian')(size, object, material);
 
 var tree = require('./entities/tree')(terrian.object, material, terrian);
-
-var critter = require('./entities/critter')(terrian.object, material, terrian);
-entities.push(critter);
 
 // var Chunks = require('./voxel/chunks');
 // var chunks = new Chunks();

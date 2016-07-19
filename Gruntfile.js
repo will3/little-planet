@@ -2,7 +2,9 @@ module.exports = function(grunt) {
   grunt.initConfig({
     copy: {
       js: {
-        src: ['node_modules/three/build/three.js'],
+        src: ['node_modules/three/build/three.js',
+          'node_modules/stats.js/build/stats.min.js'
+        ],
         dest: 'js',
         flatten: true,
         expand: true

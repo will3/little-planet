@@ -1,8 +1,9 @@
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 
-var Voxel = require('../voxel');
-var Dir = require('../dir');
+var Voxel = require('../../voxel');
+var Dir = require('../../dir');
+var SurfaceMap = require('./surfacemap');
 
 var Chunks = Voxel.Chunks;
 var meshChunks = Voxel.meshChunks;
@@ -38,6 +39,8 @@ module.exports = function(size, parent, material) {
   var BIOME_VALUE_STONE = -0.8;
   var BIOME_VALUE_SOIL = 0;
 
+  var surfaceMap = new SurfaceMap();
+
   var ground = new Chunks();
   var water = new Chunks();
   var bounds = {
@@ -57,32 +60,32 @@ module.exports = function(size, parent, material) {
   // biome: biome data
   // height: height of surface
   var dataMap = {};
-  var surfaceMap = {};
-
   var surfaceNum = 6;
   var seaLevel = 2;
 
-  init();
-  generateGravityMap();
-  generateBumps();
-  removeFloating(ground, centerCoord);
-  generateSea();
-  generateBiomes();
-  generateTiles();
-  generateSurface();
-
   var pivot = new THREE.Object3D();
-
   var groundObject = new THREE.Object3D();
-  pivot.add(groundObject);
-  meshChunks(ground, groundObject, material);
-  meshChunks(water, pivot, material);
 
-  var positionCenter = new THREE.Vector3()
-    .subVectors(bounds.min, bounds.size)
-    .multiplyScalar(0.5);
-  pivot.position.copy(positionCenter);
-  parent.add(pivot);
+  function start() {
+    init();
+    generateGravityMap();
+    generateBumps();
+    removeFloating(ground, centerCoord);
+    generateSea();
+    generateBiomes();
+    generateTiles();
+    generateSurface();
+
+    pivot.add(groundObject);
+    meshChunks(ground, groundObject, material);
+    meshChunks(water, pivot, material);
+
+    var positionCenter = new THREE.Vector3()
+      .subVectors(bounds.min, bounds.size)
+      .multiplyScalar(0.5);
+    pivot.position.copy(positionCenter);
+    parent.add(pivot);
+  };
 
   function init() {
     for (var i = 0; i < size; i++) {
@@ -314,25 +317,7 @@ module.exports = function(size, parent, material) {
   };
 
   function generateSurface() {
-    ground.visit(function(i, j, k, v) {
-      var data = getData(i, j, k);
-      var surface = data.surface || {};
-      var gravity = data.gravity;
-
-      for (var f in gravity) {
-        var result = isSurface(i, j, k, f);
-
-        if (result) {
-          var hash = [i, j, k, f].join(',');
-          surfaceMap[hash] = [i, j, k, f];
-        }
-
-        var gravity = data.gravity;
-        if (gravity[f]) {
-          surface[f] = result;
-        }
-      }
-    });
+    surfaceMap.update(self);
   };
 
   function isSurface(i, j, k, f) {
@@ -414,16 +399,12 @@ module.exports = function(size, parent, material) {
         // }
 
         // On edge
-        if (pos[d] === 0 || pos[d] === size - 1) {
+        var gravity = data.gravity;
+        if (gravity[f] != null) {
           return GRASS;
+        } else {
+          return SOIL;
         }
-
-        var above = ground.get(coord[0], coord[1], coord[2]);
-
-        var isSurface = !above;
-
-        return isSurface ? GRASS : SOIL;
-
       } else if (level === LEVEL_MIDDLE) {
 
       } else if (level === LEVEL_CORE) {
@@ -442,7 +423,7 @@ module.exports = function(size, parent, material) {
     return dataMap[hash];
   };
 
-  return {
+  var self = {
     ground: ground,
     water: water,
     bounds: bounds,
@@ -450,6 +431,11 @@ module.exports = function(size, parent, material) {
     calcGravity: calcGravity,
     surfaceMap: surfaceMap,
     groundObject: groundObject,
-    getData: getData
+    getData: getData,
+    isSurface: isSurface
   };
+
+  start();
+
+  return self;
 };

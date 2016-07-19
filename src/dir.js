@@ -30,6 +30,22 @@ Dir.getUnitVector = function(dir) {
   }
 };
 
+Dir.unitVectorToDir = function(unitVector) {
+  if (unitVector.equals(new THREE.Vector3(-1, 0, 0))) {
+    return Dir.LEFT;
+  } else if (unitVector.equals(new THREE.Vector3(1, 0, 0))) {
+    return Dir.RIGHT;
+  } else if (unitVector.equals(new THREE.Vector3(0, -1, 0))) {
+    return Dir.BOTTOM;
+  } else if (unitVector.equals(new THREE.Vector3(0, 1, 0))) {
+    return Dir.UP;
+  } else if (unitVector.equals(new THREE.Vector3(0, 0, -1))) {
+    return Dir.BACK;
+  } else if (unitVector.equals(new THREE.Vector3(0, 0, 1))) {
+    return Dir.FRONT;
+  }
+};
+
 var getQuatResult = {};
 Dir.getQuat = function(dir) {
   if (getQuatResult[dir] == null) {
@@ -53,6 +69,10 @@ Dir.getOpposite = function(dir) {
 
 Dir.isOpposite = function(dir, dir2) {
   return Dir.getOpposite(dir) === dir2;
+};
+
+Dir.isAdjacent = function(dir, dir2) {
+  return dir !== dir2 && !this.isOpposite(dir, dir2);
 };
 
 module.exports = Dir;

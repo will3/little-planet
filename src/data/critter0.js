@@ -1,5 +1,6 @@
 var TRUNK = [20, 20, 20, 20, 20, 20];
 var LEAF = [21, 21, 21, 21, 21, 21];
+var GLOW = [30, 30, 30, 30, 30, 30];
 
 var body0 = [
   [2, 1, 1, TRUNK],
@@ -7,8 +8,6 @@ var body0 = [
   [2, 3, 1, TRUNK],
   [3, 3, 1, TRUNK],
   [4, 3, 1, TRUNK],
-  [2, 4, 1, LEAF],
-  [3, 4, 1, LEAF],
   [4, 4, 1, TRUNK],
   [2, 5, 1, TRUNK],
   [3, 5, 1, TRUNK],
@@ -16,10 +15,14 @@ var body0 = [
 
   [1, 3, 1, TRUNK],
   [0, 3, 1, TRUNK],
-  [1, 4, 1, LEAF],
+
   [0, 4, 1, TRUNK],
   [1, 5, 1, TRUNK],
-  [0, 5, 1, TRUNK]
+  [0, 5, 1, TRUNK],
+
+  [1, 4, 1, GLOW],
+  [2, 4, 1, GLOW],
+  [3, 4, 1, GLOW]
 ];
 
 var feet0 = [
@@ -50,6 +53,11 @@ var frames = [
   body0.concat(feet2)
 ];
 
+module.exports = {
+  frames: frames,
+  bounds: calcBounds(frames),
+  geometryCache: []
+};
 
 function calcBounds(frames) {
   var min = new THREE.Vector3(Infinity, Infinity, Infinity);
@@ -70,9 +78,4 @@ function calcBounds(frames) {
     min: min,
     max: max
   };
-};
-
-module.exports = {
-  frames: frames,
-  bounds: calcBounds(frames)
 };
