@@ -14,7 +14,7 @@ var LEAF = [21, 21, 21, 21, 21, 21];
 module.exports = function(parent, blockMaterial, terrian) {
   var chunks = new Chunks();
 
-  var sparse = 0.2;
+  var sparse = 0.1;
 
   function add(coord, dir) {
 
@@ -80,7 +80,7 @@ module.exports = function(parent, blockMaterial, terrian) {
   var self = {
     add: add,
     object: object,
-    scale: (1 / 3.0)
+    scale: (1 / 2.0)
   };
 
   start();
