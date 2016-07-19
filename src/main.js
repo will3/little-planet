@@ -327,16 +327,6 @@ function onMouseDown(event) {
   var point = intersects[0].point.clone()
     .add(raycasterDir.clone().multiplyScalar(-0.01));
 
-  // // Add tree at clicked point
-  // var localPoint = tree.object.worldToLocal(point);
-  // var coord = new THREE.Vector3(
-  //   Math.floor(localPoint.x),
-  //   Math.floor(localPoint.y),
-  //   Math.floor(localPoint.z)
-  // );  
-  // tree.add(coord);
-
-  // Change critter position
   var localPoint = terrian.object.worldToLocal(point);
   var coord = new THREE.Vector3(
     Math.floor(localPoint.x),
@@ -356,20 +346,21 @@ function onMouseDown(event) {
   var unitVector = coord2.clone().sub(coord);
   var f = Dir.unitVectorToDir(unitVector);
   if (f != null) {
-
-    if (event.button === 0) {
-      var critter = require('./entities/critter')(terrian.object, material, terrian);
-      entities.push(critter);
-      critter.setCoord(coord2, f);
-      critters.push(critter);
-    } else {
-      critters.forEach(function(critter) {
-        critter.setCoord(coord2, f);
-      });
-    }
+    onClickedSurface(event, coord2, f);
   }
+};
 
-
+function onClickedSurface(event, coord, f) {
+  // if (event.button === 0) {
+  //   var critter = require('./entities/critter')(terrian.object, material, terrian);
+  //   entities.push(critter);
+  //   critter.setCoord(coord, f);
+  //   critters.push(critter);
+  // } else {
+  //   critters.forEach(function(critter) {
+  //     critter.setCoord(coord, f);
+  //   });
+  // }
 };
 
 var critters = [];

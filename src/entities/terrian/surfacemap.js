@@ -116,6 +116,25 @@ SurfaceMap.prototype.updateConnections = function(surface) {
 };
 
 SurfaceMap.prototype.findShortest = function(surface, surface2, options) {
+  var self = this;
+  options = options || {
+    getDistance: function(a, b) {
+      var disDiffRatio = 10.0
+      var surfaceA = self.getWithHash(a);
+      var surfaceB = self.getWithHash(b);
+      if (surfaceA.blocked || surfaceB.blocked) {
+        return Infinity;
+      }
+      var dest = surface2;
+
+      var dis = self.graphMap[a][b];
+
+      var disDiff = (surfaceB.positionAbove.clone().distanceTo(dest.positionAbove)) -
+        (surfaceA.positionAbove.clone().distanceTo(dest.positionAbove));
+
+      return dis + disDiff * disDiffRatio;
+    }
+  }
   return this.graph.shortestPath(surface.hash, surface2.hash, options);
 };
 

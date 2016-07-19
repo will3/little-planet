@@ -1,51 +1,81 @@
-var Voxel = require('../voxel');
+var Voxel = require('../../voxel');
+var Dir = require('../../dir');
+
 var Chunks = Voxel.Chunks;
 var meshChunks = Voxel.meshChunks;
 var copyChunks = Voxel.copyChunks;
-var Dir = require('../dir');
+
+var centerOffset = new THREE.Vector3(0.5, 0.5, 0.5);
 
 module.exports = function(parent, blockMaterial, terrian) {
-  var centerOffset = new THREE.Vector3(0.5, 0.5, 0.5);
-  var data = require('../data/critter0');
+  // Data of critter
+  var data = require('../../data/critter0');
+  // Frames of data
   var frames = data.frames;
+  // Bounds of data
   var bounds = data.bounds;
+  // Offset that should be applied to internal mesh
   var offset = data.bounds.max.clone().sub(data.bounds.min).add(new THREE.Vector3(1, 1, 1)).multiplyScalar(-0.5);
+  // Scale of critter, comparing to terrian mesh
   var scale = 1 / 5.0;
+  // Inverse scale
   var inverseScale = 1 / scale;
+  // Current surface that the critter is on
   var currentSurface = null;
+  // Current target surface that the critter is going to
   var targetSurface = null;
+  // Dir arrow objects currently shown, for debug purposes
   var dirArrows = [];
+  // If true, show debug arrows
   var debugArrows = false;
+  // If true, log path finding
   var debugPath = false;
+  // Current frame of critter
   var currentFrame = 0;
 
+  // Root object of critter
   var object = new THREE.Object3D();
-  object.scale.set(scale, scale, scale);
+  // Object 2, to center blocks
   var object2 = new THREE.Object3D();
-  object2.position.copy(offset);
+  // Object to apply rotation to
   var objectRotation = new THREE.Object3D();
+  // Position of critter
   var position = new THREE.Vector3();
+  // Current path
   var path = [];
 
+  // Chunks of this critter
   var chunks = new Chunks();
 
+  // Cache of geometry by frame
   var geometryCache = data.geometryCache;
-  updateCurrentFrame();
 
+  // Next surface this critter is going to
+  var nextSurface = null;
+  // Next surface connection this critter is travelling
+  var nextSurfaceConnection = null;
+
+  // Movement speed
+  var movementSpeed = 0.1;
+  // Step size, changing this changes frame interval
+  var stepSize = 0.006;
+  // Frame interval
+  var frameInterval = stepSize / movementSpeed;
+  // Counter for frame
+  var frameCounter = 0;
+  // Total frames
+  var totalFrames = frames.length;
+  // If the critter is walking
+  var walking = false;
+  // Progress between currentSurface and nextSurface
+  var lastProgress = 0;
+
+  object.scale.set(scale, scale, scale);
+  object2.position.copy(offset);
+  updateCurrentFrame();
   parent.add(object);
   object.add(objectRotation);
   objectRotation.add(object2);
-
-  var nextSurface = null;
-  var nextSurfaceConnection = null;
-
-  var movementSpeed = 0.1;
-  var stepSize = 0.006;
-  var frameInterval = stepSize / movementSpeed;
-  var frameCounter = 0;
-  var totalFrames = frames.length;
-  var walking = false;
-  var lastProgress = 0;
 
   function updateCurrentFrame() {
     var cache = geometryCache[currentFrame];
@@ -170,26 +200,10 @@ module.exports = function(parent, blockMaterial, terrian) {
     }
 
     var surfaceMap = terrian.surfaceMap;
-    var disDiffRatio = 10.0;
     var result = terrian.surfaceMap.findShortest(
       path[0] == null ? currentSurface : terrian.surfaceMap.getWithHash(path[0]),
-      targetSurface, {
-        getDistance: function(a, b) {
-          var surface1 = surfaceMap.getWithHash(a);
-          var surface2 = surfaceMap.getWithHash(b);
-          if (surface1.blocked || surface2.blocked) {
-            return Infinity;
-          }
-          var dest = targetSurface;
+      targetSurface);
 
-          var dis = surfaceMap.graphMap[a][b];
-
-          var disDiff = (surface2.positionAbove.clone().distanceTo(dest.positionAbove)) -
-            (surface1.positionAbove.clone().distanceTo(dest.positionAbove));
-
-          return dis + disDiff * disDiffRatio;
-        }
-      });
     if (result != null) {
       result.shift();
       path = path.concat(result);
@@ -200,6 +214,10 @@ module.exports = function(parent, blockMaterial, terrian) {
     if (debugPath) {
       console.log(endDate - startDate);
     }
+  };
+
+  function idle() {
+    
   };
 
   return {

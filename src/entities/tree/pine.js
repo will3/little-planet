@@ -17,7 +17,7 @@ module.exports = function(coord, dir) {
   // Base size
   var baseSize = 3;
   // Curve for variable size
-  var varSizeCurve = 1.5;
+  var varSizeCurve = 2.0;
 
   var ran = Math.random();
   var radius = Math.pow(ran, varSizeCurve) * varSize + baseSize;
