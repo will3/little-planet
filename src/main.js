@@ -13,7 +13,7 @@ if (env === 'dev') {
 }
 
 // Post processing setting
-var postprocessing = { enabled: true, renderMode: 0, glow: false };
+var postprocessing = { enabled: true, renderMode: 0 };
 
 // Renderer, scene, camera
 var renderer = new THREE.WebGLRenderer();
@@ -33,7 +33,6 @@ var depthMaterial;
 var depthRenderTarget;
 var ssaoPass;
 var effectComposer;
-var glowComposer;
 var finalComposer;
 
 // Size
@@ -92,37 +91,12 @@ function initPostprocessing() {
   ssaoPass.uniforms['onlyAO'].value = (postprocessing.renderMode == 1);
   ssaoPass.uniforms['aoClamp'].value = 100.0;
   ssaoPass.uniforms['lumInfluence'].value = 0.7;
+ssaoPass.renderToScreen = true;
 
   // Add pass to effect composer
   effectComposer = new THREE.EffectComposer(renderer);
   effectComposer.addPass(renderPass);
-  effectComposer.addPass(ssaoPass);
-
-  if (postprocessing.glow) {
-    var renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBufer: false };
-    var renderTargetGlow = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
-
-    glowComposer = new THREE.EffectComposer(renderer, renderTargetGlow);
-
-    var renderModelGlow = new THREE.RenderPass(scene, camera);
-
-    var effectHBlur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
-    var effectVBlur = new THREE.ShaderPass(THREE.VerticalBlurShader);
-    effectHBlur.uniforms['h'].value = bluriness / (width);
-    effectVBlur.uniforms['v'].value = bluriness / (height);
-
-    glowComposer.addPass(renderModelGlow);
-    glowComposer.addPass(effectHBlur);
-    glowComposer.addPass(effectVBlur);
-
-    var finalPass = new THREE.ShaderPass(finalShader);
-    finalPass.needsSwap = true;
-    finalPass.renderToScreen = true;
-    finalPass.uniforms['tGlow'].value = renderTargetGlow.texture;
-    effectComposer.addPass(finalPass);
-  } else {
-    ssaoPass.renderToScreen = true;
-  }
+  effectComposer.addPass(ssaoPass);    
 };
 
 function onWindowResize() {
@@ -252,17 +226,7 @@ function render() {
     renderer.render(scene, camera, depthRenderTarget, true);
     noAoLayer.visible = true;
     scene.overrideMaterial = null;
-
-    // Render renderPass and SSAO shaderPass
-
-    if (postprocessing.glow) {
-      renderer.setClearColor(0x000000);
-      swap(true);
-      glowComposer.render();
-      renderer.setClearColor(0xBBD9F7);
-      swap(false);
-
-    }
+    
     effectComposer.render();
   } else {
     renderer.render(scene, camera);
