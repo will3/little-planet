@@ -1,5 +1,5 @@
 var Dir = require('../../dir');
-var Voxel = require('../../voxel');
+var Voxel = require('voxel');
 var Chunks = Voxel.Chunks;
 var visitShape = Voxel.visitShape;
 var removeFloating = Voxel.removeFloating;

@@ -1,5 +1,5 @@
 var THREE = require('three');
-var Voxel = require('../../voxel');
+var Voxel = require('voxel');
 var Dir = require('../../dir');
 
 var Chunks = Voxel.Chunks;
@@ -21,7 +21,7 @@ module.exports = function(parent, blockMaterial, terrian) {
 
     var chunks2 = require('./pine')(coord, dir);
 
-    copyChunks(chunks2, chunks, coord);
+    copyChunks(chunks2, chunks, coord.toArray());
     meshChunks(chunks, object, blockMaterial);
   };
 

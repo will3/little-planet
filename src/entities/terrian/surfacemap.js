@@ -1,4 +1,4 @@
-var Voxel = require('../../voxel');
+var Voxel = require('voxel');
 var Dir = require('../../Dir');
 var Chunks = Voxel.Chunks;
 var Graph = require('node-dijkstra');

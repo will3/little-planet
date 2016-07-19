@@ -1,9 +1,10 @@
 var SimplexNoise = require('simplex-noise');
 
-var mesher = require('../voxel/mesher');
 var Dir = require('../dir');
-var Chunks = require('../voxel/chunks');
-var meshChunks = require('../voxel/meshchunks');
+var Voxel = require('voxel');
+var mesher = Voxel.mesher;
+var Chunks = Voxel.Chunks;
+var meshChunks = Voxel.meshChunks;
 
 var CLOUD = 10;
 

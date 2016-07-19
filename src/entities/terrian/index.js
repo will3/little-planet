@@ -1,7 +1,7 @@
 var THREE = require('three');
 var SimplexNoise = require('simplex-noise');
 
-var Voxel = require('../../voxel');
+var Voxel = require('voxel');
 var Dir = require('../../dir');
 var SurfaceMap = require('./surfacemap');
 

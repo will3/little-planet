@@ -35,7 +35,7 @@ var effectComposer;
 var finalComposer;
 
 // Size
-var size = 16;
+var size = 32;
 var modelSize = 5;
 var disScale = 1.2 * modelSize;
 
