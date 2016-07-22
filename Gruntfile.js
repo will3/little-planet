@@ -45,7 +45,12 @@ module.exports = function(grunt) {
       }
     },
     concurrent: {
-      dev: ['shell:build', 'connect']
+      dev: {
+        tasks: ['shell:build', 'connect'],
+        options: {
+          logConcurrentOutput: true
+        }
+      }
     }
   });
 
