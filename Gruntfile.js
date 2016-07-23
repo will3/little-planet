@@ -28,6 +28,14 @@ module.exports = function(grunt) {
         dest: 'js/postprocessing',
         flatten: true,
         expand: true
+      },
+
+      data: {
+        src: [
+          '../veditor/server/data/**'
+        ],
+        dest: 'data',
+        expand: true
       }
     },
     shell: {

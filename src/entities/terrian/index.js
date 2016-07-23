@@ -391,16 +391,9 @@ module.exports = function(size, parent, material) {
           return SOIL;
         }
 
-        // GRASS
-
-        // no grass below
-        // if (biome.relSeaLevel > 0) {
-        //   return SOIL;
-        // }
-
         // On edge
         var gravity = data.gravity;
-        if (gravity[f] != null) {
+        if (gravity[f] != null && (biome.relSeaLevel <= 0)) {
           return GRASS;
         } else {
           return SOIL;
